@@ -8,33 +8,47 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import theme from '../constants/theme';
-
-const {
-   colors,
-   gradients,
-   spacing,
-   borderRadius,
-   typography,
-   shadows,
-   components,
-} = theme;
+import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 export default function HomeScreen() {
    const navigation = useNavigation();
+   const { theme, isDark, toggleTheme } = useTheme();
+   const { colors, gradients, spacing, typography, components } = theme;
 
    return (
       <>
-         <StatusBar barStyle="light-content" />
+         <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
          <LinearGradient colors={gradients.primary} style={styles.container}>
+            <TouchableOpacity
+               style={[
+                  styles.themeToggle,
+                  { backgroundColor: colors.surface, top: 10, right: 10 },
+               ]}
+               onPress={toggleTheme}
+            >
+               <MaterialIcons
+                  name={isDark ? 'light-mode' : 'dark-mode'}
+                  size={24}
+                  color={colors.primary}
+               />
+            </TouchableOpacity>
+
             <View style={styles.header}>
-               <Text style={styles.title}>ComPORT</Text>
-               <Text style={styles.subtitle}>Build your perfect PC bundle</Text>
+               <Text style={[styles.title, { color: colors.primary }]}>
+                  ComPORT
+               </Text>
+               <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                  Build your perfect PC bundle
+               </Text>
             </View>
 
             <View style={styles.buttonContainer}>
                <TouchableOpacity
-                  style={styles.primaryButton}
+                  style={[
+                     styles.primaryButton,
+                     { backgroundColor: colors.primary },
+                  ]}
                   onPress={() => navigation.navigate('Builder')}
                   activeOpacity={0.8}
                >
@@ -48,10 +62,24 @@ export default function HomeScreen() {
                         🔧
                      </Text>
                      <View>
-                        <Text style={styles.primaryButtonText}>
+                        <Text
+                           style={[
+                              styles.primaryButtonText,
+                              { color: colors.textDark },
+                           ]}
+                        >
                            Start Building
                         </Text>
-                        <Text style={styles.buttonSubtext}>
+                        <Text
+                           style={[
+                              styles.buttonSubtext,
+                              {
+                                 color: isDark
+                                    ? colors.bgSecondary
+                                    : colors.textMuted,
+                              },
+                           ]}
+                        >
                            Create your custom PC
                         </Text>
                      </View>
@@ -60,29 +88,53 @@ export default function HomeScreen() {
 
                <View style={styles.secondaryButtons}>
                   <TouchableOpacity
-                     style={styles.secondaryButton}
+                     style={[
+                        styles.secondaryButton,
+                        {
+                           backgroundColor: colors.surface,
+                           borderColor: colors.surfaceBorder,
+                        },
+                     ]}
                      onPress={() => navigation.navigate('Catalog')}
                      activeOpacity={0.8}
                   >
                      <Text style={styles.buttonIcon}>📦</Text>
-                     <Text style={styles.secondaryButtonText}>
+                     <Text
+                        style={[
+                           styles.secondaryButtonText,
+                           { color: colors.textPrimary },
+                        ]}
+                     >
                         Browse Parts
                      </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                     style={styles.secondaryButton}
+                     style={[
+                        styles.secondaryButton,
+                        {
+                           backgroundColor: colors.surface,
+                           borderColor: colors.surfaceBorder,
+                        },
+                     ]}
                      onPress={() => navigation.navigate('Profile')}
                      activeOpacity={0.8}
                   >
                      <Text style={styles.buttonIcon}>👤</Text>
-                     <Text style={styles.secondaryButtonText}>My Profile</Text>
+                     <Text
+                        style={[
+                           styles.secondaryButtonText,
+                           { color: colors.textPrimary },
+                        ]}
+                     >
+                        My Profile
+                     </Text>
                   </TouchableOpacity>
                </View>
             </View>
 
             <View style={styles.footer}>
-               <Text style={styles.footerText}>
+               <Text style={[styles.footerText, { color: colors.textMuted }]}>
                   Compatible • Optimized • Accessible
                </Text>
             </View>
@@ -94,69 +146,83 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
    container: {
       flex: 1,
-      paddingTop: spacing.xxl + spacing.md,
-      paddingHorizontal: spacing.lg,
+      paddingTop: 80,
+      paddingHorizontal: 24,
+   },
+   themeToggle: {
+      position: 'absolute',
+      top: 48,
+      right: 24,
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 10,
    },
    header: {
       alignItems: 'center',
-      marginBottom: spacing.xxl + spacing.md,
+      marginBottom: 64,
    },
    title: {
-      ...components.heading1,
-      marginBottom: spacing.sm,
+      fontSize: 48,
+      fontWeight: '800',
+      letterSpacing: 2,
+      marginBottom: 8,
    },
    subtitle: {
-      ...components.subtitle,
+      fontSize: 15,
+      letterSpacing: 0.5,
    },
    buttonContainer: {
       flex: 1,
       justifyContent: 'center',
    },
    primaryButton: {
-      ...components.primaryButton,
-      marginBottom: spacing.lg,
+      borderRadius: 16,
+      padding: 24,
+      marginBottom: 24,
    },
    buttonContent: {
       flexDirection: 'row',
       alignItems: 'center',
    },
    buttonIcon: {
-      fontSize: spacing.xl,
+      fontSize: 32,
    },
    primaryButtonText: {
-      color: colors.textDark,
-      fontSize: typography.xl,
-      fontWeight: typography.bold,
-      marginBottom: spacing.xs,
+      fontSize: 22,
+      fontWeight: '700',
+      marginBottom: 4,
    },
    buttonSubtext: {
-      color: colors.bgSecondary,
-      fontSize: typography.sm,
+      fontSize: 13,
       opacity: 0.8,
    },
    secondaryButtons: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      gap: spacing.md,
+      gap: 16,
    },
    secondaryButton: {
-      ...components.secondaryButton,
+      borderRadius: 16,
+      padding: 24,
+      borderWidth: 1,
       flex: 1,
       alignItems: 'center',
    },
    secondaryButtonText: {
-      color: colors.textPrimary,
-      fontSize: typography.md,
-      fontWeight: typography.semiBold,
-      marginTop: spacing.sm,
+      fontSize: 15,
+      fontWeight: '600',
+      marginTop: 8,
       textAlign: 'center',
    },
    footer: {
       alignItems: 'center',
-      paddingBottom: spacing.xl + spacing.sm,
+      paddingBottom: 40,
    },
    footerText: {
-      ...components.caption,
-      letterSpacing: typography.wider,
+      fontSize: 13,
+      letterSpacing: 1,
    },
 });

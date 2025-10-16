@@ -2,18 +2,19 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
-import theme from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
 
 import HomeScreen from '../screens/HomeScreen';
 import BundleBuilderScreen from '../screens/BundleBuilderScreen';
 import ProductCatalogScreen from '../screens/ProductCatalogScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
-const { colors, spacing, typography } = theme;
-
 const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
+   const { theme } = useTheme();
+   const { colors, spacing, typography } = theme;
+
    return (
       <Tab.Navigator
          initialRouteName="Home"
@@ -73,30 +74,22 @@ export default function TabNavigator() {
          <Tab.Screen
             name="Home"
             component={HomeScreen}
-            options={{
-               tabBarLabel: 'Home',
-            }}
+            options={{ tabBarLabel: 'Home' }}
          />
          <Tab.Screen
             name="Builder"
             component={BundleBuilderScreen}
-            options={{
-               tabBarLabel: 'Builder',
-            }}
+            options={{ tabBarLabel: 'Builder' }}
          />
          <Tab.Screen
             name="Catalog"
             component={ProductCatalogScreen}
-            options={{
-               tabBarLabel: 'Catalog',
-            }}
+            options={{ tabBarLabel: 'Catalog' }}
          />
          <Tab.Screen
             name="Profile"
             component={ProfileScreen}
-            options={{
-               tabBarLabel: 'Profile',
-            }}
+            options={{ tabBarLabel: 'Profile' }}
          />
       </Tab.Navigator>
    );
