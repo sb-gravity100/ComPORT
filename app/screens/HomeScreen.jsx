@@ -76,7 +76,7 @@ export default function HomeScreen() {
                               {
                                  color: isDark
                                     ? colors.bgSecondary
-                                    : colors.textMuted,
+                                    : colors.textLight,
                               },
                            ]}
                         >

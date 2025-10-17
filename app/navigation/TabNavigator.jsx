@@ -1,7 +1,10 @@
 import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import {
+   createBottomTabNavigator,
+   TransitionSpecs,
+} from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Platform } from 'react-native';
+import { Animated, Easing, Platform } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
 import HomeScreen from '../screens/HomeScreen';

@@ -10,7 +10,7 @@ const darkColors = {
    surfaceBorder: 'rgba(255, 255, 255, 0.1)',
    textPrimary: '#ffffff',
    textSecondary: '#a0a0b0',
-   textMuted: '#6a6a7a',
+   textMuted: '#7b7b8aff',
    textDark: '#1a1a2e',
    success: '#00ff88',
    warning: '#ffaa00',
@@ -38,12 +38,13 @@ const lightColors = {
    info: '#0088cc',
 };
 
-const sharedStyles = {
+export const sharedStyles = {
    gradients: {
-      primary: ['#1a1a2e', '#16213e', '#1e4c85ff'],
-      primaryReverse: ['#0f3460', '#16213e', '#1a1a2e'],
-      accent: ['#00d4ff', '#00a8cc', '#0088aa'],
+      primary: ['#1a1a2e', '#1f2a48', '#2e5c9a'],
+      primaryReverse: ['#2e5c9a', '#1f2a48', '#1a1a2e'],
+      accent: ['#00c6ff', '#0072ff', '#0052cc'],
    },
+
    spacing: {
       xs: 4,
       sm: 8,
@@ -77,6 +78,8 @@ const sharedStyles = {
       wide: 0.5,
       wider: 1,
       widest: 2,
+
+      fontFamily: 'DM_Sans_Variable',
    },
 };
 
