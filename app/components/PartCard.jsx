@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 
 export default function PartCard({ product, onPress }) {
    const { theme } = useTheme();
-   const { colors, spacing, typography, borderRadius } = theme;
+   const { colors } = theme;
 
    const getCategoryIcon = (category) => {
       const icons = {
@@ -16,7 +16,6 @@ export default function PartCard({ product, onPress }) {
          Storage: 'sd-storage',
          PSU: 'power',
          Case: 'computer',
-         Cooling: 'ac-unit',
       };
       return icons[category] || 'devices';
    };
@@ -47,7 +46,7 @@ export default function PartCard({ product, onPress }) {
                />
             </View>
             <View style={styles.badges}>
-               {product.inStock ? (
+               {product.availableAt > 0 ? (
                   <View
                      style={[
                         styles.badge,
@@ -62,7 +61,8 @@ export default function PartCard({ product, onPress }) {
                      <Text
                         style={[styles.badgeText, { color: colors.success }]}
                      >
-                        In Stock
+                        {product.availableAt} shop
+                        {product.availableAt !== 1 ? 's' : ''}
                      </Text>
                   </View>
                ) : (
@@ -100,12 +100,31 @@ export default function PartCard({ product, onPress }) {
 
          <View style={styles.footer}>
             <View style={styles.priceContainer}>
-               <Text style={[styles.price, { color: colors.primary }]}>
-                  ₱{product.price.toLocaleString()}
-               </Text>
+               {product.priceRange.min === product.priceRange.max ? (
+                  <Text style={[styles.price, { color: colors.primary }]}>
+                     ₱{product.priceRange.average.toLocaleString()}
+                  </Text>
+               ) : (
+                  <>
+                     <Text
+                        style={[styles.priceRange, { color: colors.primary }]}
+                     >
+                        ₱{product.priceRange.min.toLocaleString()} - ₱
+                        {product.priceRange.max.toLocaleString()}
+                     </Text>
+                     <Text
+                        style={[styles.avgPrice, { color: colors.textMuted }]}
+                     >
+                        Avg: ₱
+                        {Math.round(
+                           product.priceRange.average
+                        ).toLocaleString()}
+                     </Text>
+                  </>
+               )}
             </View>
 
-            {product.averageRating > 0 && (
+            {product.ratings?.overall?.average > 0 && (
                <View style={styles.rating}>
                   <MaterialIcons name="star" size={16} color={colors.warning} />
                   <Text
@@ -114,7 +133,8 @@ export default function PartCard({ product, onPress }) {
                         { color: colors.textSecondary },
                      ]}
                   >
-                     {product.averageRating.toFixed(1)} ({product.totalReviews})
+                     {product.ratings.overall.average.toFixed(1)} (
+                     {product.ratings.overall.count})
                   </Text>
                </View>
             )}
@@ -205,7 +225,7 @@ const styles = StyleSheet.create({
    footer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       marginBottom: 12,
    },
    priceContainer: {
@@ -215,6 +235,16 @@ const styles = StyleSheet.create({
       fontSize: 20,
       fontWeight: '800',
       letterSpacing: 0.5,
+   },
+   priceRange: {
+      fontSize: 16,
+      fontWeight: '800',
+      letterSpacing: 0.5,
+      marginBottom: 2,
+   },
+   avgPrice: {
+      fontSize: 11,
+      fontWeight: '600',
    },
    rating: {
       flexDirection: 'row',

@@ -32,7 +32,7 @@ const CATEGORIES = [
    },
    { id: 'Storage', name: 'Storage', icon: 'sd-storage', required: true },
    { id: 'PSU', name: 'Power Supply', icon: 'power', required: true },
-   { id: 'Case', name: 'Case', icon: 'computer', required: false },
+   { id: 'Case', name: 'Case', icon: 'inventory', required: false },
 ];
 
 export default function BundleBuilderScreen() {
@@ -49,6 +49,7 @@ export default function BundleBuilderScreen() {
    const [currentCategory, setCurrentCategory] = useState(null);
    const [availableProducts, setAvailableProducts] = useState([]);
    const [loadingProducts, setLoadingProducts] = useState(false);
+   const [selectedSources, setSelectedSources] = useState({});
 
    const requiredCategories = CATEGORIES.filter((c) => c.required);
    const missingRequired = requiredCategories
@@ -69,41 +70,88 @@ export default function BundleBuilderScreen() {
    };
 
    const selectPart = (product) => {
-      const previousPrice = selectedParts[currentCategory.id]?.price || 0;
+      // If product has multiple sources, show source selector
+      if (product.sources && product.sources.length > 1) {
+         // For now, auto-select the cheapest in-stock source
+         const inStockSources = product.sources.filter((s) => s.inStock);
+         const selectedSource =
+            inStockSources.length > 0
+               ? inStockSources.reduce((min, curr) =>
+                    curr.price < min.price ? curr : min
+                 )
+               : product.sources[0];
 
-      setSelectedParts((prev) => ({
-         ...prev,
-         [currentCategory.id]: product,
-      }));
+         setSelectedSources((prev) => ({
+            ...prev,
+            [currentCategory.id]: selectedSource,
+         }));
 
-      setTotalPrice((prev) => prev - previousPrice + product.price);
+         // Use the selected source price
+         const previousPrice =
+            selectedParts[currentCategory.id]?.selectedPrice || 0;
+
+         setSelectedParts((prev) => ({
+            ...prev,
+            [currentCategory.id]: {
+               ...product,
+               selectedPrice: selectedSource.price,
+               selectedShop: selectedSource.shopName,
+               selectedSourceUrl: selectedSource.productUrl,
+            },
+         }));
+
+         setTotalPrice((prev) => prev - previousPrice + selectedSource.price);
+      } else {
+         // Single source or no sources
+         const price = product.priceRange?.average || product.price || 0;
+         const previousPrice =
+            selectedParts[currentCategory.id]?.selectedPrice || 0;
+
+         setSelectedParts((prev) => ({
+            ...prev,
+            [currentCategory.id]: {
+               ...product,
+               selectedPrice: price,
+               selectedShop: product.sources?.[0]?.shopName || 'N/A',
+            },
+         }));
+
+         setTotalPrice((prev) => prev - previousPrice + price);
+      }
+
       setModalVisible(false);
    };
 
    const removePart = (categoryId) => {
       const part = selectedParts[categoryId];
       if (part) {
-         setTotalPrice((prev) => prev - part.price);
+         setTotalPrice((prev) => prev - (part.selectedPrice || 0));
          setSelectedParts((prev) => {
             const newParts = { ...prev };
             delete newParts[categoryId];
             return newParts;
+         });
+         setSelectedSources((prev) => {
+            const newSources = { ...prev };
+            delete newSources[categoryId];
+            return newSources;
          });
       }
    };
 
    const handleSaveBundle = () => {
       if (!bundleName.trim()) return;
-
       if (missingRequired.length > 0) return;
 
-      navigation.navigate('Summary', {
-         bundleData: {
-            name: bundleName,
-            parts: selectedParts,
-            totalPrice,
-         },
-      });
+      // Prepare bundle data with selected sources
+      const bundleData = {
+         name: bundleName,
+         parts: selectedParts,
+         sources: selectedSources,
+         totalPrice,
+      };
+
+      navigation.navigate('Summary', { bundleData });
    };
 
    return (
@@ -155,6 +203,7 @@ export default function BundleBuilderScreen() {
                         key={category.id}
                         category={category}
                         part={part}
+                        selectedSource={selectedSources[category.id]}
                         isSelected={isSelected}
                         missingRequired={isMissing}
                         colors={colors}

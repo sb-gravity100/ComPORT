@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
    View,
    Text,
@@ -15,6 +15,8 @@ import { useTheme } from '../context/ThemeContext';
 import { getProducts } from '../services/api';
 import PartCard from '../components/PartCard';
 import { useNavigation } from '@react-navigation/native';
+import api from '../services/api';
+import { Animated } from 'react-native';
 
 const CATEGORIES = [
    'All',
@@ -29,18 +31,62 @@ const CATEGORIES = [
 
 export default function ProductCatalogScreen() {
    const { theme, isDark } = useTheme();
-   const { colors, gradients, spacing } = theme;
+   const { colors, gradients } = theme;
    const navigation = useNavigation();
+   const filterHeight = useRef(new Animated.Value(1)).current;
 
    const [products, setProducts] = useState([]);
    const [loading, setLoading] = useState(true);
    const [search, setSearch] = useState('');
    const [selectedCategory, setSelectedCategory] = useState('All');
+   const [selectedShop, setSelectedShop] = useState('All');
+   const [shops, setShops] = useState(['All']);
+   const [inStockOnly, setInStockOnly] = useState(false);
    const [sortBy, setSortBy] = useState('newest');
+   const [showFilters, setShowFilters] = useState(true);
+   const [collapsedSections, setCollapsedSections] = useState({
+      category: false,
+      shop: false,
+      stockSort: false,
+   });
+   const [showCategoryFilter, setShowCategoryFilter] = useState(true);
+   const [showShopFilter, setShowShopFilter] = useState(true);
+   const [showStockSortFilter, setShowStockSortFilter] = useState(true);
+
+   useEffect(() => {
+      fetchShops();
+   }, []);
 
    useEffect(() => {
       fetchProducts();
-   }, [selectedCategory, sortBy]);
+   }, [selectedCategory, selectedShop, sortBy, inStockOnly]);
+
+   useEffect(() => {
+      Animated.timing(filterHeight, {
+         toValue: showFilters ? 1 : 0,
+         duration: 300,
+         useNativeDriver: false,
+      }).start();
+   }, [showFilters]);
+
+   const animatedStyle = {
+      opacity: filterHeight,
+      height: filterHeight.interpolate({
+         inputRange: [0, 1],
+         outputRange: [0, null],
+      }),
+   };
+
+   const fetchShops = async () => {
+      try {
+         const result = await api.get('/products/shops/list');
+         if (result.data.success) {
+            setShops(['All', ...result.data.shops.map((s) => s.name)]);
+         }
+      } catch (error) {
+         console.error('Error fetching shops:', error);
+      }
+   };
 
    const fetchProducts = async () => {
       setLoading(true);
@@ -48,6 +94,8 @@ export default function ProductCatalogScreen() {
          category: selectedCategory !== 'All' ? selectedCategory : undefined,
          sort: sortBy,
          search: search || undefined,
+         shopName: selectedShop !== 'All' ? selectedShop : undefined,
+         inStockOnly: inStockOnly ? 'true' : undefined,
       };
 
       const result = await getProducts(filters);
@@ -103,81 +151,216 @@ export default function ProductCatalogScreen() {
                   )}
                </View>
 
-               <FlatList
-                  horizontal
-                  data={CATEGORIES}
-                  showsHorizontalScrollIndicator={false}
-                  keyExtractor={(item) => item}
-                  renderItem={({ item }) => (
-                     <TouchableOpacity
-                        style={[
-                           styles.categoryChip,
-                           {
-                              backgroundColor:
-                                 selectedCategory === item
-                                    ? colors.primary
-                                    : colors.surface,
-                              borderColor: colors.surfaceBorder,
-                           },
-                        ]}
-                        onPress={() => setSelectedCategory(item)}
-                     >
-                        <Text
-                           style={[
-                              styles.categoryText,
-                              {
-                                 color:
-                                    selectedCategory === item
-                                       ? colors.textDark
-                                       : colors.textSecondary,
-                              },
-                           ]}
-                        >
-                           {item}
-                        </Text>
-                     </TouchableOpacity>
-                  )}
-                  contentContainerStyle={styles.categories}
-               />
-
-               <View style={styles.sortContainer}>
-                  <Text style={[styles.sortLabel, { color: colors.textMuted }]}>
-                     Sort by:
-                  </Text>
+               <Animated.View>
+                  {/* Category Filter */}
                   <TouchableOpacity
-                     style={[
-                        styles.sortButton,
-                        {
-                           backgroundColor: colors.surface,
-                           borderColor: colors.surfaceBorder,
-                        },
-                     ]}
-                     onPress={() => {
-                        const sorts = [
-                           'newest',
-                           'price_asc',
-                           'price_desc',
-                           'rating',
-                        ];
-                        const current = sorts.indexOf(sortBy);
-                        setSortBy(sorts[(current + 1) % sorts.length]);
-                     }}
+                     onPress={() => setShowCategoryFilter(!showCategoryFilter)}
+                     style={styles.filterToggle}
                   >
                      <Text
-                        style={[styles.sortText, { color: colors.textPrimary }]}
+                        style={[
+                           styles.filterLabel,
+                           { color: colors.textMuted },
+                        ]}
                      >
-                        {sortBy === 'newest' && 'Newest'}
-                        {sortBy === 'price_asc' && 'Price: Low to High'}
-                        {sortBy === 'price_desc' && 'Price: High to Low'}
-                        {sortBy === 'rating' && 'Highest Rated'}
+                        Category {showCategoryFilter ? '▲' : '▼'}
                      </Text>
-                     <MaterialIcons
-                        name="arrow-drop-down"
-                        size={20}
-                        color={colors.textPrimary}
-                     />
                   </TouchableOpacity>
-               </View>
+
+                  {showCategoryFilter && (
+                     <FlatList
+                        horizontal
+                        data={CATEGORIES}
+                        showsHorizontalScrollIndicator={false}
+                        keyExtractor={(item) => item}
+                        renderItem={({ item }) => (
+                           <TouchableOpacity
+                              style={[
+                                 styles.categoryChip,
+                                 {
+                                    backgroundColor:
+                                       selectedCategory === item
+                                          ? colors.primary
+                                          : colors.surface,
+                                    borderColor: colors.surfaceBorder,
+                                 },
+                              ]}
+                              onPress={() => setSelectedCategory(item)}
+                           >
+                              <Text
+                                 style={[
+                                    styles.categoryText,
+                                    {
+                                       color:
+                                          selectedCategory === item
+                                             ? colors.textDark
+                                             : colors.textSecondary,
+                                    },
+                                 ]}
+                              >
+                                 {item}
+                              </Text>
+                           </TouchableOpacity>
+                        )}
+                        contentContainerStyle={styles.categories}
+                     />
+                  )}
+
+                  {/* Shop Filter */}
+                  {shops.length > 1 && (
+                     <>
+                        <TouchableOpacity
+                           onPress={() => setShowShopFilter(!showShopFilter)}
+                           style={styles.filterToggle}
+                        >
+                           <Text
+                              style={[
+                                 styles.filterLabel,
+                                 { color: colors.textMuted },
+                              ]}
+                           >
+                              Shop {showShopFilter ? '▲' : '▼'}
+                           </Text>
+                        </TouchableOpacity>
+
+                        {showShopFilter && (
+                           <FlatList
+                              horizontal
+                              data={shops}
+                              showsHorizontalScrollIndicator={false}
+                              keyExtractor={(item) => item}
+                              renderItem={({ item }) => (
+                                 <TouchableOpacity
+                                    style={[
+                                       styles.categoryChip,
+                                       {
+                                          backgroundColor:
+                                             selectedShop === item
+                                                ? colors.primary
+                                                : colors.surface,
+                                          borderColor: colors.surfaceBorder,
+                                       },
+                                    ]}
+                                    onPress={() => setSelectedShop(item)}
+                                 >
+                                    <Text
+                                       style={[
+                                          styles.categoryText,
+                                          {
+                                             color:
+                                                selectedShop === item
+                                                   ? colors.textDark
+                                                   : colors.textSecondary,
+                                          },
+                                       ]}
+                                    >
+                                       {item}
+                                    </Text>
+                                 </TouchableOpacity>
+                              )}
+                              contentContainerStyle={styles.categories}
+                           />
+                        )}
+                     </>
+                  )}
+
+                  {/* Stock Filter & Sort */}
+                  <TouchableOpacity
+                     onPress={() =>
+                        setShowStockSortFilter(!showStockSortFilter)
+                     }
+                     style={styles.filterToggle}
+                  >
+                     <Text
+                        style={[
+                           styles.filterLabel,
+                           { color: colors.textMuted },
+                        ]}
+                     >
+                        Stock & Sort {showStockSortFilter ? '▲' : '▼'}
+                     </Text>
+                  </TouchableOpacity>
+
+                  {showStockSortFilter && (
+                     <View style={styles.filterRow}>
+                        <TouchableOpacity
+                           style={[
+                              styles.stockToggle,
+                              {
+                                 backgroundColor: colors.surface,
+                                 borderColor: inStockOnly
+                                    ? colors.primary
+                                    : colors.surfaceBorder,
+                              },
+                           ]}
+                           onPress={() => setInStockOnly(!inStockOnly)}
+                        >
+                           <MaterialIcons
+                              name={
+                                 inStockOnly
+                                    ? 'check-box'
+                                    : 'check-box-outline-blank'
+                              }
+                              size={20}
+                              color={
+                                 inStockOnly ? colors.primary : colors.textMuted
+                              }
+                           />
+                           <Text
+                              style={[
+                                 styles.stockToggleText,
+                                 {
+                                    color: inStockOnly
+                                       ? colors.primary
+                                       : colors.textSecondary,
+                                 },
+                              ]}
+                           >
+                              In Stock
+                           </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                           style={[
+                              styles.sortButton,
+                              {
+                                 backgroundColor: colors.surface,
+                                 borderColor: colors.surfaceBorder,
+                              },
+                           ]}
+                           onPress={() => {
+                              const sorts = [
+                                 'newest',
+                                 'price_asc',
+                                 'price_desc',
+                                 'rating',
+                                 'availability',
+                              ];
+                              const current = sorts.indexOf(sortBy);
+                              setSortBy(sorts[(current + 1) % sorts.length]);
+                           }}
+                        >
+                           <Text
+                              style={[
+                                 styles.sortText,
+                                 { color: colors.textPrimary },
+                              ]}
+                           >
+                              {sortBy === 'newest' && 'Newest'}
+                              {sortBy === 'price_asc' && 'Price: Low'}
+                              {sortBy === 'price_desc' && 'Price: High'}
+                              {sortBy === 'rating' && 'Top Rated'}
+                              {sortBy === 'availability' && 'Most Available'}
+                           </Text>
+                           <MaterialIcons
+                              name="arrow-drop-down"
+                              size={20}
+                              color={colors.textPrimary}
+                           />
+                        </TouchableOpacity>
+                     </View>
+                  )}
+               </Animated.View>
             </View>
 
             {loading ? (
@@ -251,6 +434,12 @@ const styles = StyleSheet.create({
       flex: 1,
       fontSize: 15,
    },
+   filterLabel: {
+      fontSize: 12,
+      fontWeight: '600',
+      marginTop: 4,
+      marginBottom: 8,
+   },
    categories: {
       paddingVertical: 8,
       gap: 8,
@@ -265,14 +454,23 @@ const styles = StyleSheet.create({
       fontSize: 13,
       fontWeight: '600',
    },
-   sortContainer: {
+   filterRow: {
       flexDirection: 'row',
       alignItems: 'center',
       marginTop: 8,
       marginBottom: 16,
       gap: 8,
    },
-   sortLabel: {
+   stockToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      borderRadius: 8,
+      borderWidth: 1.5,
+      gap: 6,
+   },
+   stockToggleText: {
       fontSize: 13,
       fontWeight: '600',
    },
@@ -309,5 +507,17 @@ const styles = StyleSheet.create({
       fontSize: 16,
       fontWeight: '600',
       marginTop: 16,
+   },
+   toggleFiltersButton: {
+      padding: 8,
+      borderRadius: 8,
+      alignSelf: 'flex-end',
+      marginBottom: 8,
+   },
+   sectionToggle: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 6,
    },
 });

@@ -13,6 +13,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { createBundle } from '../services/api';
+import PartRow from '../components/PartRow';
 
 export default function BundleSummaryScreen({ route }) {
    const { bundleData } = route.params || {};
@@ -168,71 +169,23 @@ export default function BundleSummaryScreen({ route }) {
                      Selected Parts
                   </Text>
 
-                  {partsArray.map(([category, part], index) => (
-                     <View
-                        key={category}
-                        style={[
-                           styles.partRow,
-                           index !== partsArray.length - 1 &&
-                              styles.partRowBorder,
-                        ]}
-                     >
-                        <View style={styles.partLeft}>
-                           <View
-                              style={[
-                                 styles.partIconSmall,
-                                 {
-                                    backgroundColor: theme.withOpacity(
-                                       colors.primary,
-                                       0.1
-                                    ),
-                                 },
-                              ]}
-                           >
-                              <MaterialIcons
-                                 name="memory"
-                                 size={20}
-                                 color={colors.primary}
-                              />
-                           </View>
-                           <View style={styles.partDetails}>
-                              <Text
-                                 style={[
-                                    styles.partCategory,
-                                    { color: colors.textMuted },
-                                 ]}
-                              >
-                                 {category}
-                              </Text>
-                              <Text
-                                 style={[
-                                    styles.partNameSmall,
-                                    { color: colors.textPrimary },
-                                 ]}
-                                 numberOfLines={1}
-                              >
-                                 {part.name}
-                              </Text>
-                              <Text
-                                 style={[
-                                    styles.partBrandSmall,
-                                    { color: colors.textSecondary },
-                                 ]}
-                              >
-                                 {part.brand}
-                              </Text>
-                           </View>
-                        </View>
-                        <Text
-                           style={[
-                              styles.partPriceSmall,
-                              { color: colors.primary },
-                           ]}
-                        >
-                           ₱{part.price.toLocaleString()}
-                        </Text>
-                     </View>
-                  ))}
+                  {partsArray.map(([category, part], index) => {
+                     const source = bundleData.sources?.[category];
+                     const isLast = index === partsArray.length - 1;
+
+                     return (
+                        <PartRow
+                           key={category}
+                           category={category}
+                           part={part}
+                           source={source}
+                           colors={colors}
+                           theme={theme}
+                           isLast={isLast}
+                           styles={styles}
+                        />
+                     );
+                  })}
                </View>
 
                {/* Comfort Profile Preview */}
@@ -660,5 +613,22 @@ const styles = StyleSheet.create({
       textAlign: 'center',
       fontSize: 16,
       fontWeight: '600',
+   },
+   shopBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginTop: 4,
+   },
+   shopName: {
+      fontSize: 10,
+      fontWeight: '600',
+   },
+   priceColumn: {
+      alignItems: 'flex-end',
+   },
+   shippingNote: {
+      fontSize: 10,
+      marginTop: 2,
    },
 });

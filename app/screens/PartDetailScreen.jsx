@@ -7,6 +7,7 @@ import {
    TouchableOpacity,
    ActivityIndicator,
    StatusBar,
+   Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -17,12 +18,13 @@ import { useNavigation } from '@react-navigation/native';
 export default function PartDetailScreen({ route }) {
    const { partId } = route.params;
    const { theme, isDark } = useTheme();
-   const { colors, gradients, spacing } = theme;
+   const { colors, gradients } = theme;
    const navigation = useNavigation();
 
    const [product, setProduct] = useState(null);
    const [reviews, setReviews] = useState([]);
    const [loading, setLoading] = useState(true);
+   const [selectedSource, setSelectedSource] = useState(null);
 
    useEffect(() => {
       fetchData();
@@ -35,9 +37,30 @@ export default function PartDetailScreen({ route }) {
          getReviews(partId),
       ]);
 
-      if (!productResult.error) setProduct(productResult.product);
+      if (!productResult.error) {
+         setProduct(productResult.product);
+         // Auto-select cheapest in-stock source
+         const inStockSources = productResult.product.sources.filter(
+            (s) => s.inStock
+         );
+         if (inStockSources.length > 0) {
+            setSelectedSource(inStockSources[0]);
+         }
+      }
       if (!reviewsResult.error) setReviews(reviewsResult.reviews);
       setLoading(false);
+   };
+
+   const getBestDeal = () => {
+      if (!product) return null;
+      const inStockSources = product.sources.filter((s) => s.inStock);
+      if (inStockSources.length === 0) return null;
+
+      return inStockSources.reduce((best, current) => {
+         const bestTotal = best.price + (best.shipping?.cost || 0);
+         const currentTotal = current.price + (current.shipping?.cost || 0);
+         return currentTotal < bestTotal ? current : best;
+      });
    };
 
    if (loading) {
@@ -61,6 +84,8 @@ export default function PartDetailScreen({ route }) {
          </LinearGradient>
       );
    }
+
+   const bestDeal = getBestDeal();
 
    return (
       <>
@@ -129,65 +154,67 @@ export default function PartDetailScreen({ route }) {
                   </Text>
 
                   <View style={styles.priceRow}>
-                     <Text style={[styles.price, { color: colors.primary }]}>
-                        ₱{product.price.toLocaleString()}
-                     </Text>
-                     {product.inStock ? (
-                        <View
+                     <View>
+                        <Text
                            style={[
-                              styles.stockBadge,
+                              styles.priceLabel,
+                              { color: colors.textMuted },
+                           ]}
+                        >
+                           Price Range
+                        </Text>
+                        <Text style={[styles.price, { color: colors.primary }]}>
+                           ₱{product.priceRange.min.toLocaleString()} - ₱
+                           {product.priceRange.max.toLocaleString()}
+                        </Text>
+                     </View>
+                     <View
+                        style={[
+                           styles.stockBadge,
+                           {
+                              backgroundColor: theme.withOpacity(
+                                 product.availableAt > 0
+                                    ? colors.success
+                                    : colors.error,
+                                 0.1
+                              ),
+                           },
+                        ]}
+                     >
+                        <MaterialIcons
+                           name={
+                              product.availableAt > 0
+                                 ? 'check-circle'
+                                 : 'cancel'
+                           }
+                           size={16}
+                           color={
+                              product.availableAt > 0
+                                 ? colors.success
+                                 : colors.error
+                           }
+                        />
+                        <Text
+                           style={[
+                              styles.stockText,
                               {
-                                 backgroundColor: theme.withOpacity(
-                                    colors.success,
-                                    0.1
-                                 ),
+                                 color:
+                                    product.availableAt > 0
+                                       ? colors.success
+                                       : colors.error,
                               },
                            ]}
                         >
-                           <MaterialIcons
-                              name="check-circle"
-                              size={16}
-                              color={colors.success}
-                           />
-                           <Text
-                              style={[
-                                 styles.stockText,
-                                 { color: colors.success },
-                              ]}
-                           >
-                              In Stock
-                           </Text>
-                        </View>
-                     ) : (
-                        <View
-                           style={[
-                              styles.stockBadge,
-                              {
-                                 backgroundColor: theme.withOpacity(
-                                    colors.error,
-                                    0.1
-                                 ),
-                              },
-                           ]}
-                        >
-                           <MaterialIcons
-                              name="cancel"
-                              size={16}
-                              color={colors.error}
-                           />
-                           <Text
-                              style={[
-                                 styles.stockText,
-                                 { color: colors.error },
-                              ]}
-                           >
-                              Out of Stock
-                           </Text>
-                        </View>
-                     )}
+                           {product.availableAt > 0
+                              ? `${product.availableAt} shop${
+                                   product.availableAt !== 1 ? 's' : ''
+                                }`
+                              : 'Out of Stock'}
+                        </Text>
+                     </View>
                   </View>
 
-                  {product.averageRating > 0 && (
+                  {product.ratings?.overall?.average > 0 && (
                      <View style={styles.ratingRow}>
                         <MaterialIcons
                            name="star"
@@ -200,7 +227,7 @@ export default function PartDetailScreen({ route }) {
                               { color: colors.textPrimary },
                            ]}
                         >
-                           {product.averageRating.toFixed(1)}
+                           {product.ratings.overall.average.toFixed(1)}
                         </Text>
                         <Text
                            style={[
@@ -208,74 +235,303 @@ export default function PartDetailScreen({ route }) {
                               { color: colors.textMuted },
                            ]}
                         >
-                           ({product.totalReviews} reviews)
+                           ({product.ratings.overall.count} ratings across{' '}
+                           {product.totalSources} shops)
                         </Text>
                      </View>
                   )}
                </View>
 
-               {/* Comfort Score */}
-               {product.comfortScore > 0 && (
+               {/* Best Deal Highlight */}
+               {bestDeal && (
                   <View
                      style={[
                         styles.card,
+                        styles.bestDealCard,
                         {
-                           backgroundColor: colors.surface,
-                           borderColor: colors.surfaceBorder,
+                           backgroundColor: theme.withOpacity(
+                              colors.success,
+                              0.1
+                           ),
+                           borderColor: colors.success,
                         },
                      ]}
                   >
+                     <View style={styles.bestDealHeader}>
+                        <MaterialIcons
+                           name="local-offer"
+                           size={24}
+                           color={colors.success}
+                        />
+                        <Text
+                           style={[
+                              styles.bestDealTitle,
+                              { color: colors.success },
+                           ]}
+                        >
+                           Best Deal
+                        </Text>
+                     </View>
                      <Text
-                        style={[
-                           styles.sectionTitle,
-                           { color: colors.textPrimary },
-                        ]}
+                        style={[styles.shopName, { color: colors.textPrimary }]}
                      >
-                        Comfort Score
+                        {bestDeal.shopName}
                      </Text>
-                     <View style={styles.comfortScoreContainer}>
-                        <View style={styles.scoreCircle}>
+                     <View style={styles.dealPriceRow}>
+                        <Text
+                           style={[styles.dealPrice, { color: colors.success }]}
+                        >
+                           ₱{bestDeal.price.toLocaleString()}
+                        </Text>
+                        {bestDeal.shipping?.cost > 0 && (
                            <Text
                               style={[
-                                 styles.scoreValue,
-                                 { color: colors.primary },
-                              ]}
-                           >
-                              {product.comfortScore}
-                           </Text>
-                           <Text
-                              style={[
-                                 styles.scoreLabel,
+                                 styles.shippingCost,
                                  { color: colors.textMuted },
                               ]}
                            >
-                              /100
+                              + ₱{bestDeal.shipping.cost} shipping
                            </Text>
-                        </View>
-                        <View
+                        )}
+                     </View>
+                     <TouchableOpacity
+                        style={[
+                           styles.viewButton,
+                           { backgroundColor: colors.success },
+                        ]}
+                        onPress={() => Linking.openURL(bestDeal.productUrl)}
+                     >
+                        <Text
                            style={[
-                              styles.comfortBar,
-                              {
-                                 backgroundColor: theme.withOpacity(
-                                    colors.primary,
-                                    0.2
-                                 ),
-                              },
+                              styles.viewButtonText,
+                              { color: colors.textDark },
                            ]}
                         >
-                           <View
-                              style={[
-                                 styles.comfortFill,
-                                 {
-                                    backgroundColor: colors.primary,
-                                    width: `${product.comfortScore}%`,
-                                 },
-                              ]}
-                           />
-                        </View>
-                     </View>
+                           View on {bestDeal.shopName}
+                        </Text>
+                        <MaterialIcons
+                           name="open-in-new"
+                           size={16}
+                           color={colors.textDark}
+                        />
+                     </TouchableOpacity>
                   </View>
                )}
+
+               {/* Shop Sources */}
+               <View
+                  style={[
+                     styles.card,
+                     {
+                        backgroundColor: colors.surface,
+                        borderColor: colors.surfaceBorder,
+                     },
+                  ]}
+               >
+                  <Text
+                     style={[
+                        styles.sectionTitle,
+                        { color: colors.textPrimary },
+                     ]}
+                  >
+                     Available at {product.sources.length} Shops
+                  </Text>
+
+                  {product.sources.map((source, index) => {
+                     const sourceRating = product.ratings?.bySource?.find(
+                        (r) => r.shopName === source.shopName
+                     );
+                     const totalCost =
+                        source.price + (source.shipping?.cost || 0);
+                     const isBestDeal =
+                        bestDeal && source.shopName === bestDeal.shopName;
+
+                     return (
+                        <TouchableOpacity
+                           key={index}
+                           style={[
+                              styles.sourceCard,
+                              {
+                                 backgroundColor: theme.withOpacity(
+                                    colors.bgTertiary,
+                                    0.5
+                                 ),
+                                 borderColor: isBestDeal
+                                    ? colors.success
+                                    : 'transparent',
+                                 borderWidth: isBestDeal ? 2 : 0,
+                              },
+                           ]}
+                           onPress={() => Linking.openURL(source.productUrl)}
+                        >
+                           <View style={styles.sourceHeader}>
+                              <View style={styles.sourceInfo}>
+                                 <Text
+                                    style={[
+                                       styles.sourceName,
+                                       { color: colors.textPrimary },
+                                    ]}
+                                 >
+                                    {source.shopName}
+                                 </Text>
+                                 {sourceRating && (
+                                    <View style={styles.sourceRating}>
+                                       <MaterialIcons
+                                          name="star"
+                                          size={14}
+                                          color={colors.warning}
+                                       />
+                                       <Text
+                                          style={[
+                                             styles.sourceRatingText,
+                                             { color: colors.textSecondary },
+                                          ]}
+                                       >
+                                          {sourceRating.average.toFixed(1)} (
+                                          {sourceRating.count})
+                                       </Text>
+                                    </View>
+                                 )}
+                              </View>
+                              <View style={styles.sourceStatus}>
+                                 {source.inStock ? (
+                                    <View
+                                       style={[
+                                          styles.inStockBadge,
+                                          {
+                                             backgroundColor: theme.withOpacity(
+                                                colors.success,
+                                                0.15
+                                             ),
+                                          },
+                                       ]}
+                                    >
+                                       <Text
+                                          style={[
+                                             styles.inStockText,
+                                             { color: colors.success },
+                                          ]}
+                                       >
+                                          In Stock
+                                       </Text>
+                                    </View>
+                                 ) : (
+                                    <View
+                                       style={[
+                                          styles.inStockBadge,
+                                          {
+                                             backgroundColor: theme.withOpacity(
+                                                colors.error,
+                                                0.15
+                                             ),
+                                          },
+                                       ]}
+                                    >
+                                       <Text
+                                          style={[
+                                             styles.inStockText,
+                                             { color: colors.error },
+                                          ]}
+                                       >
+                                          Out of Stock
+                                       </Text>
+                                    </View>
+                                 )}
+                              </View>
+                           </View>
+
+                           <View style={styles.sourcePricing}>
+                              <View>
+                                 <Text
+                                    style={[
+                                       styles.sourcePrice,
+                                       { color: colors.primary },
+                                    ]}
+                                 >
+                                    ₱{source.price.toLocaleString()}
+                                 </Text>
+                                 {source.shipping?.cost > 0 && (
+                                    <Text
+                                       style={[
+                                          styles.sourceShipping,
+                                          { color: colors.textMuted },
+                                       ]}
+                                    >
+                                       + ₱{source.shipping.cost} shipping
+                                    </Text>
+                                 )}
+                                 {source.shipping?.cost === 0 && (
+                                    <Text
+                                       style={[
+                                          styles.sourceShipping,
+                                          { color: colors.success },
+                                       ]}
+                                    >
+                                       Free shipping
+                                    </Text>
+                                 )}
+                              </View>
+                              <View style={styles.sourceTotalContainer}>
+                                 <Text
+                                    style={[
+                                       styles.totalLabel,
+                                       { color: colors.textMuted },
+                                    ]}
+                                 >
+                                    Total
+                                 </Text>
+                                 <Text
+                                    style={[
+                                       styles.sourceTotal,
+                                       { color: colors.textPrimary },
+                                    ]}
+                                 >
+                                    ₱{totalCost.toLocaleString()}
+                                 </Text>
+                              </View>
+                           </View>
+
+                           {source.shipping?.estimatedDays && (
+                              <Text
+                                 style={[
+                                    styles.deliveryTime,
+                                    { color: colors.textMuted },
+                                 ]}
+                              >
+                                 <MaterialIcons
+                                    name="local-shipping"
+                                    size={12}
+                                 />{' '}
+                                 {source.shipping.estimatedDays}
+                              </Text>
+                           )}
+
+                           {isBestDeal && (
+                              <View
+                                 style={[
+                                    styles.bestDealTag,
+                                    { backgroundColor: colors.success },
+                                 ]}
+                              >
+                                 <MaterialIcons
+                                    name="check"
+                                    size={12}
+                                    color={colors.textDark}
+                                 />
+                                 <Text
+                                    style={[
+                                       styles.bestDealTagText,
+                                       { color: colors.textDark },
+                                    ]}
+                                 >
+                                    Best Deal
+                                 </Text>
+                              </View>
+                           )}
+                        </TouchableOpacity>
+                     );
+                  })}
+               </View>
 
                {/* Specifications */}
                {product.specifications && (
@@ -321,7 +577,7 @@ export default function PartDetailScreen({ route }) {
                   </View>
                )}
 
-               {/* Reviews */}
+               {/* Platform Reviews */}
                <View
                   style={[
                      styles.card,
@@ -338,7 +594,7 @@ export default function PartDetailScreen({ route }) {
                            { color: colors.textPrimary },
                         ]}
                      >
-                        Reviews ({reviews.length})
+                        Community Reviews ({reviews.length})
                      </Text>
                      <TouchableOpacity
                         style={[
@@ -366,7 +622,7 @@ export default function PartDetailScreen({ route }) {
                      <Text
                         style={[styles.noReviews, { color: colors.textMuted }]}
                      >
-                        No reviews yet. Be the first to review!
+                        No community reviews yet. Be the first to review!
                      </Text>
                   ) : (
                      reviews.map((review) => (
@@ -428,35 +684,6 @@ export default function PartDetailScreen({ route }) {
                   )}
                </View>
             </ScrollView>
-
-            {/* Add to Bundle Button */}
-            <View
-               style={[
-                  styles.footer,
-                  {
-                     backgroundColor: colors.bgPrimary,
-                     borderTopColor: colors.surfaceBorder,
-                  },
-               ]}
-            >
-               <TouchableOpacity
-                  style={[
-                     styles.addButton,
-                     { backgroundColor: colors.primary },
-                  ]}
-               >
-                  <MaterialIcons
-                     name="add-shopping-cart"
-                     size={24}
-                     color={colors.textDark}
-                  />
-                  <Text
-                     style={[styles.addButtonText, { color: colors.textDark }]}
-                  >
-                     Add to Bundle
-                  </Text>
-               </TouchableOpacity>
-            </View>
          </LinearGradient>
       </>
    );
@@ -488,7 +715,7 @@ const styles = StyleSheet.create({
    },
    content: {
       paddingHorizontal: 16,
-      paddingBottom: 100,
+      paddingBottom: 40,
    },
    card: {
       borderRadius: 16,
@@ -522,8 +749,13 @@ const styles = StyleSheet.create({
       justifyContent: 'space-between',
       marginBottom: 12,
    },
+   priceLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      marginBottom: 4,
+   },
    price: {
-      fontSize: 28,
+      fontSize: 18,
       fontWeight: '800',
    },
    stockBadge: {
@@ -548,38 +780,139 @@ const styles = StyleSheet.create({
       fontWeight: '700',
    },
    reviewCount: {
+      fontSize: 12,
+   },
+   bestDealCard: {
+      borderWidth: 2,
+   },
+   bestDealHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 8,
+   },
+   bestDealTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+   },
+   shopName: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 8,
+   },
+   dealPriceRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 8,
+      marginBottom: 12,
+   },
+   dealPrice: {
+      fontSize: 24,
+      fontWeight: '800',
+   },
+   shippingCost: {
+      fontSize: 12,
+   },
+   viewButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 12,
+      borderRadius: 8,
+      gap: 6,
+   },
+   viewButtonText: {
       fontSize: 14,
+      fontWeight: '700',
    },
    sectionTitle: {
       fontSize: 18,
       fontWeight: '700',
       marginBottom: 12,
    },
-   comfortScoreContainer: {
+   sourceCard: {
+      padding: 12,
+      borderRadius: 12,
+      marginBottom: 12,
+      position: 'relative',
+   },
+   sourceHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 8,
+   },
+   sourceInfo: {
+      flex: 1,
+   },
+   sourceName: {
+      fontSize: 15,
+      fontWeight: '700',
+      marginBottom: 4,
+   },
+   sourceRating: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 16,
+      gap: 4,
    },
-   scoreCircle: {
-      alignItems: 'center',
-   },
-   scoreValue: {
-      fontSize: 32,
-      fontWeight: '800',
-   },
-   scoreLabel: {
+   sourceRatingText: {
       fontSize: 12,
       fontWeight: '600',
    },
-   comfortBar: {
-      flex: 1,
-      height: 12,
-      borderRadius: 6,
-      overflow: 'hidden',
+   sourceStatus: {
+      marginLeft: 8,
    },
-   comfortFill: {
-      height: '100%',
+   inStockBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
       borderRadius: 6,
+   },
+   inStockText: {
+      fontSize: 11,
+      fontWeight: '700',
+   },
+   sourcePricing: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+      marginBottom: 8,
+   },
+   sourcePrice: {
+      fontSize: 18,
+      fontWeight: '800',
+   },
+   sourceShipping: {
+      fontSize: 11,
+      marginTop: 2,
+   },
+   sourceTotalContainer: {
+      alignItems: 'flex-end',
+   },
+   totalLabel: {
+      fontSize: 10,
+      fontWeight: '600',
+   },
+   sourceTotal: {
+      fontSize: 16,
+      fontWeight: '700',
+   },
+   deliveryTime: {
+      fontSize: 11,
+   },
+   bestDealTag: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 12,
+      gap: 4,
+   },
+   bestDealTagText: {
+      fontSize: 10,
+      fontWeight: '700',
    },
    specRow: {
       flexDirection: 'row',
@@ -652,27 +985,6 @@ const styles = StyleSheet.create({
    },
    reviewDate: {
       fontSize: 11,
-   },
-   footer: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderTopWidth: 1,
-   },
-   addButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 16,
-      borderRadius: 16,
-      gap: 8,
-   },
-   addButtonText: {
-      fontSize: 16,
-      fontWeight: '700',
    },
    loader: {
       flex: 1,

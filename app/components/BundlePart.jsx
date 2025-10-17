@@ -6,6 +6,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 export default function BundlePart({
    category,
    part,
+   selectedSource = null,
    isSelected,
    colors,
    theme,
@@ -89,8 +90,31 @@ export default function BundlePart({
                   >
                      {part.brand}
                   </Text>
+                  {selectedSource && (
+                     <View style={styles.sourceInfo}>
+                        <MaterialIcons
+                           name="store"
+                           size={12}
+                           color={colors.textMuted}
+                        />
+                        <Text
+                           style={[
+                              styles.partShop,
+                              { color: colors.textMuted },
+                           ]}
+                        >
+                           {selectedSource.shopName}
+                        </Text>
+                     </View>
+                  )}
                   <Text style={[styles.partPrice, { color: colors.primary }]}>
-                     ₱{part.price.toLocaleString()}
+                     ₱
+                     {(
+                        part.selectedPrice ||
+                        part.priceRange?.average ||
+                        part.price ||
+                        0
+                     ).toLocaleString()}
                   </Text>
                </View>
                <View style={styles.actions}>
@@ -181,7 +205,14 @@ const styles = StyleSheet.create({
    partInfo: { flex: 1 },
    partName: { fontSize: 16, fontWeight: '600' },
    partBrand: { fontSize: 14 },
+   partShop: { fontSize: 11, fontWeight: '600' },
    partPrice: { fontSize: 14, fontWeight: '600', marginTop: 4 },
+   sourceInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginTop: 2,
+   },
    actions: { flexDirection: 'row', gap: 8 },
    change: {
       padding: 8,
