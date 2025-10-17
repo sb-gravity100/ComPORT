@@ -1,48 +1,48 @@
 // Dark Theme (existing)
 const darkColors = {
-   primary: '#00d4ff',
-   primaryDark: '#00a8cc',
-   primaryLight: '#33ddff',
-   bgPrimary: '#1a1a2e',
-   bgSecondary: '#16213e',
-   bgTertiary: '#0f3460',
-   surface: 'rgba(255, 255, 255, 0.08)',
+   primary: '#00b2d8', // Teal-blue hybrid
+   primaryDark: '#0077a3', // Deep ocean blue
+   primaryLight: '#33c9e6', // Soft aqua
+   bgPrimary: '#0f1c2e', // Deep slate blue
+   bgSecondary: '#132a3e',
+   bgTertiary: '#183a52',
+   surface: 'rgba(255, 255, 255, 0.06)',
    surfaceBorder: 'rgba(255, 255, 255, 0.1)',
-   textPrimary: '#ffffff',
-   textSecondary: '#a0a0b0',
-   textMuted: '#7b7b8aff',
-   textDark: '#1a1a2e',
-   success: '#00ff88',
-   warning: '#ffaa00',
-   error: '#ff4466',
-   info: '#00d4ff',
+   textPrimary: '#e0f7fa',
+   textSecondary: '#a0c4d0',
+   textMuted: '#7ba9b7',
+   textDark: '#0f1c2e',
+   success: '#00e676',
+   warning: '#ffb74d',
+   error: '#ef5350',
+   info: '#00b2d8',
 };
 
 // Light Theme
 const lightColors = {
-   primary: '#0088cc',
-   primaryDark: '#006699',
-   primaryLight: '#33a3dd',
-   bgPrimary: '#f5f5f7',
+   primary: '#0099cc',
+   primaryDark: '#0077a3',
+   primaryLight: '#4dbbe6',
+   bgPrimary: '#f0faff',
    bgSecondary: '#ffffff',
-   bgTertiary: '#e8e8ea',
+   bgTertiary: '#e0f2f7',
    surface: 'rgba(0, 0, 0, 0.04)',
    surfaceBorder: 'rgba(0, 0, 0, 0.1)',
-   textPrimary: '#1a1a2e',
-   textSecondary: '#4a4a5a',
-   textMuted: '#8a8a9a',
+   textPrimary: '#0f1c2e',
+   textSecondary: '#4a7c8a',
+   textMuted: '#7ba9b7',
    textDark: '#ffffff',
-   success: '#00cc66',
-   warning: '#ff9500',
-   error: '#ff3b30',
-   info: '#0088cc',
+   success: '#00c853',
+   warning: '#ff9800',
+   error: '#f44336',
+   info: '#0099cc',
 };
 
 export const sharedStyles = {
    gradients: {
-      primary: ['#1a1a2e', '#1f2a48', '#2e5c9a'],
-      primaryReverse: ['#2e5c9a', '#1f2a48', '#1a1a2e'],
-      accent: ['#00c6ff', '#0072ff', '#0052cc'],
+      primary: ['#0f1c2e', '#005b8e', '#0070d8ff'],
+      primaryReverse: ['#00b2d8', '#005b8e', '#0f1c2e'],
+      accent: ['#4dbbe6', '#26a6c9', '#0077a3'],
    },
 
    spacing: {

@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
    },
    themeToggle: {
       position: 'absolute',
-      top: 35,
+      top: 20,
       right: 24,
       width: 48,
       height: 48,

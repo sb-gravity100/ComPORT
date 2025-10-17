@@ -25,7 +25,6 @@ export default function ProfileScreen() {
    useEffect(() => {
       const fetchUser = async () => {
          const result = await getUser();
-         console.log(result.data);
          setUser(result.data?.user);
          setLoading(false);
       };
@@ -36,13 +35,38 @@ export default function ProfileScreen() {
       await onLogout();
       navigation.reset({
          index: 0,
-         routes: [
-            {
-               name: 'Login',
-            },
-         ],
+         routes: [{ name: 'Login' }],
       });
    };
+
+   const renderBundle = (bundle) => (
+      <TouchableOpacity
+         key={bundle._id}
+         style={[styles.card, { backgroundColor: colors.surface }]}
+         onPress={() => navigation.push('BundleDetails', { id: bundle._id })}
+      >
+         <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
+            {bundle.name}
+         </Text>
+         <Text style={{ color: colors.textSecondary }}>
+            ₱{bundle.totalPrice.toLocaleString()}
+         </Text>
+      </TouchableOpacity>
+   );
+
+   const renderReview = (review) => (
+      <View
+         key={review._id}
+         style={[styles.card, { backgroundColor: colors.surface }]}
+      >
+         <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
+            {review.title || 'Untitled Review'}
+         </Text>
+         <Text style={{ color: colors.textSecondary }}>
+            Rating: {review.rating} / 5
+         </Text>
+      </View>
+   );
 
    return (
       <>
@@ -74,16 +98,20 @@ export default function ProfileScreen() {
                   >
                      Saved Bundles
                   </Text>
-                  <View
-                     style={[
-                        styles.placeholder,
-                        { backgroundColor: colors.surfaceBorder },
-                     ]}
-                  >
-                     <Text style={{ color: colors.textMuted }}>
-                        No bundles yet
-                     </Text>
-                  </View>
+                  {user?.savedBundles?.length ? (
+                     user.savedBundles.map(renderBundle)
+                  ) : (
+                     <View
+                        style={[
+                           styles.placeholder,
+                           { backgroundColor: colors.surfaceBorder },
+                        ]}
+                     >
+                        <Text style={{ color: colors.textMuted }}>
+                           No bundles yet
+                        </Text>
+                     </View>
+                  )}
                </View>
 
                <View style={styles.section}>
@@ -92,16 +120,20 @@ export default function ProfileScreen() {
                   >
                      Review History
                   </Text>
-                  <View
-                     style={[
-                        styles.placeholder,
-                        { backgroundColor: colors.surfaceBorder },
-                     ]}
-                  >
-                     <Text style={{ color: colors.textMuted }}>
-                        No reviews yet
-                     </Text>
-                  </View>
+                  {user?.reviews?.length ? (
+                     user.reviews.map(renderReview)
+                  ) : (
+                     <View
+                        style={[
+                           styles.placeholder,
+                           { backgroundColor: colors.surfaceBorder },
+                        ]}
+                     >
+                        <Text style={{ color: colors.textMuted }}>
+                           No reviews yet
+                        </Text>
+                     </View>
+                  )}
                </View>
 
                <TouchableOpacity
@@ -131,14 +163,6 @@ const styles = StyleSheet.create({
       flexGrow: 1,
       paddingBottom: 40,
    },
-   placeholder: {
-      borderRadius: 12,
-      paddingVertical: 24,
-      paddingHorizontal: 16,
-      alignItems: 'center',
-      justifyContent: 'center',
-   },
-
    title: {
       fontSize: 32,
       fontWeight: '800',
@@ -160,6 +184,23 @@ const styles = StyleSheet.create({
       fontSize: 18,
       fontWeight: '600',
       marginBottom: 8,
+   },
+   placeholder: {
+      borderRadius: 12,
+      paddingVertical: 24,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+   },
+   card: {
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 12,
+   },
+   cardTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 4,
    },
    logoutButton: {
       borderRadius: 16,

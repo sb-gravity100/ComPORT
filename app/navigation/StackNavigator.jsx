@@ -8,12 +8,14 @@ import LoginScreen from '../screens/LoginScreen';
 import { useAuth } from '../context/AuthContext';
 import RegisterScreen from '../screens/RegisterScreen';
 import { useNavigation } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Stack = createNativeStackNavigator();
 
 export default function StackNavigator() {
    const { authState, onLogout } = useAuth();
    const { navigate } = useNavigation();
+   const insets = useSafeAreaInsets();
 
    useEffect(() => {
       if (authState.authenticated) {
@@ -24,7 +26,15 @@ export default function StackNavigator() {
    return (
       <Stack.Navigator
          initialRouteName="Login"
-         screenOptions={{ headerShown: false, animation: 'fade_from_bottom' }}
+         screenOptions={{
+            headerShown: false,
+            animation: 'fade_from_bottom',
+            animationDuration: 1000,
+            contentStyle: {
+               paddingTop: insets.top,
+               paddingBottom: insets.bottom,
+            },
+         }}
       >
          <Stack.Screen name="Main" component={TabNavigator} />
          <Stack.Screen name="PartDetail" component={PartDetailScreen} />

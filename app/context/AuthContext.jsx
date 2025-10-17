@@ -4,6 +4,7 @@ import { getAndroidId } from 'expo-application';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
+import api from '../services/api';
 
 const AuthContext = createContext({});
 
@@ -41,6 +42,7 @@ export function AuthProvider({ children }) {
                token: token,
                authenticated: true,
             }));
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
          }
       };
       loadToken();
@@ -78,6 +80,9 @@ export function AuthProvider({ children }) {
          axios.defaults.headers.common[
             'Authorization'
          ] = `Bearer ${result?.data?.token}`;
+         api.defaults.headers.common[
+            'Authorization'
+         ] = `Bearer ${result?.data?.token}`;
 
          setAuthState((state) => ({
             token: result?.data?.token,
@@ -113,6 +118,7 @@ export function AuthProvider({ children }) {
    const logout = async () => {
       await SecureStore.deleteItemAsync(process.env.EXPO_PUBLIC_TOKEN_KEY);
       axios.defaults.headers.common['Authorization'] = '';
+      api.defaults.headers.common['Authorization'] = '';
 
       setAuthState(() => ({
          token: null,
