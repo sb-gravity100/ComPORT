@@ -154,6 +154,34 @@ export default function BundleBuilderScreen() {
       navigation.navigate('Summary', { bundleData });
    };
 
+   const handleChangeSource = (categoryId, newSource) => {
+      const currentPart = selectedParts[categoryId];
+      if (!currentPart) return;
+
+      const previousPrice = currentPart.selectedPrice || 0;
+      const updatedPrice = newSource.price || 0;
+
+      // Update selectedSources
+      setSelectedSources((prev) => ({
+         ...prev,
+         [categoryId]: newSource,
+      }));
+
+      // Update selectedParts with new source info
+      setSelectedParts((prev) => ({
+         ...prev,
+         [categoryId]: {
+            ...prev[categoryId],
+            selectedPrice: updatedPrice,
+            selectedShop: newSource.shopName,
+            selectedSourceUrl: newSource.productUrl,
+         },
+      }));
+
+      // Update total price
+      setTotalPrice((prev) => prev - previousPrice + updatedPrice);
+   };
+
    return (
       <>
          <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
@@ -206,6 +234,7 @@ export default function BundleBuilderScreen() {
                         selectedSource={selectedSources[category.id]}
                         isSelected={isSelected}
                         missingRequired={isMissing}
+                        onChangeSource={handleChangeSource}
                         colors={colors}
                         theme={theme}
                         onSelect={openPartSelector}
