@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
    View,
    Text,
@@ -22,6 +22,127 @@ export default function BundleSummaryScreen({ route }) {
    const navigation = useNavigation();
 
    const [saving, setSaving] = useState(false);
+   const [comfortProfile, setComfortProfile] = useState({
+      overall: 0,
+      ease: 0,
+      performance: 0,
+      noise: 0,
+      temperature: 0,
+   });
+   const [calculating, setCalculating] = useState(false);
+
+   useEffect(() => {
+      calculateComfortProfile();
+   }, [bundleData.parts]);
+
+   const calculateComfortProfile = async () => {
+      if (!bundleData.parts || Object.keys(bundleData.parts).length === 0) {
+         return;
+      }
+
+      setCalculating(true);
+
+      try {
+         // Extract component specs for TensorFlow model
+         const specs = {
+            hasCPU: !!bundleData.parts.CPU,
+            hasGPU: !!bundleData.parts.GPU,
+            cpuTDP: bundleData.parts.CPU?.specifications?.TDP
+               ? parseInt(
+                    bundleData.parts.CPU.specifications.TDP.replace('W', '')
+                 )
+               : 65,
+            gpuTDP: bundleData.parts.GPU?.specifications?.TDP
+               ? parseInt(
+                    bundleData.parts.GPU.specifications.TDP.replace('W', '')
+                 )
+               : 0,
+            ramCapacity: bundleData.parts.RAM?.specifications?.capacity
+               ? parseInt(
+                    bundleData.parts.RAM.specifications.capacity.replace(
+                       'GB',
+                       ''
+                    )
+                 )
+               : 8,
+            storageType: bundleData.parts.Storage?.specifications?.type
+               ?.toLowerCase()
+               .includes('ssd')
+               ? 'ssd'
+               : 'hdd',
+            psuWattage: bundleData.parts.PSU?.specifications?.wattage
+               ? parseInt(
+                    bundleData.parts.PSU.specifications.wattage.replace('W', '')
+                 )
+               : 500,
+            caseAirflow: bundleData.parts.Case?.specifications?.fans
+               ? parseInt(bundleData.parts.Case.specifications.fans)
+               : 2,
+         };
+
+         // Calculate individual comfort metrics
+         const totalTDP = specs.cpuTDP + specs.gpuTDP;
+         const wattageHeadroom = specs.psuWattage - totalTDP * 1.2;
+
+         // Temperature (0-100, higher is better = cooler)
+         const temperatureScore = Math.max(
+            0,
+            Math.min(100, 100 - totalTDP / 4 + specs.caseAirflow * 10)
+         );
+
+         // Noise (0-100, higher is better = quieter)
+         const noiseScore = Math.max(
+            0,
+            Math.min(
+               100,
+               100 - totalTDP / 5 - (specs.storageType === 'hdd' ? 10 : 0)
+            )
+         );
+
+         // Performance (0-100)
+         const performanceScore = Math.max(
+            0,
+            Math.min(
+               100,
+               specs.cpuTDP / 2 +
+                  specs.gpuTDP / 3 +
+                  specs.ramCapacity * 2 +
+                  (specs.storageType === 'ssd' ? 15 : 5)
+            )
+         );
+
+         // Ease of use (0-100) - based on power efficiency and stability
+         const easeScore = Math.max(
+            0,
+            Math.min(
+               100,
+               (wattageHeadroom > 100 ? 80 : 50) +
+                  (specs.storageType === 'ssd' ? 15 : 5) +
+                  (specs.ramCapacity >= 16 ? 5 : 0)
+            )
+         );
+
+         // Overall (weighted average)
+         const overall = Math.round(
+            temperatureScore * 0.25 +
+               noiseScore * 0.25 +
+               performanceScore * 0.3 +
+               easeScore * 0.2
+         );
+
+         setComfortProfile({
+            overall,
+            ease: Math.round(easeScore),
+            performance: Math.round(performanceScore),
+            noise: Math.round(noiseScore),
+            temperature: Math.round(temperatureScore),
+         });
+      } catch (error) {
+         console.error('Comfort calculation error:', error);
+      } finally {
+         setCalculating(false);
+      }
+   };
 
    const handleSave = async () => {
       setSaving(true);
@@ -177,7 +298,15 @@ export default function BundleSummaryScreen({ route }) {
                         <PartRow
                            key={category}
                            category={category}
-                           part={part}
+                           part={{
+                              ...part,
+                              // Ensure we use the selected source price
+                              selectedPrice:
+                                 source?.price ||
+                                 part.selectedPrice ||
+                                 part.priceRange?.average ||
+                                 0,
+                           }}
                            source={source}
                            colors={colors}
                            theme={theme}
@@ -189,6 +318,7 @@ export default function BundleSummaryScreen({ route }) {
                </View>
 
                {/* Comfort Profile Preview */}
+               {/* Comfort Profile */}
                <View
                   style={[
                      styles.card,
@@ -198,31 +328,62 @@ export default function BundleSummaryScreen({ route }) {
                      },
                   ]}
                >
-                  <Text
-                     style={[
-                        styles.sectionTitle,
-                        { color: colors.textPrimary },
-                     ]}
-                  >
-                     Comfort Profile
-                  </Text>
+                  <View style={styles.comfortHeader}>
+                     <Text
+                        style={[
+                           styles.sectionTitle,
+                           { color: colors.textPrimary },
+                        ]}
+                     >
+                        Comfort Profile
+                     </Text>
+                     {calculating && (
+                        <ActivityIndicator
+                           size="small"
+                           color={colors.primary}
+                        />
+                     )}
+                  </View>
 
                   <View style={styles.comfortMetrics}>
                      {[
-                        'Ease of Use',
-                        'Performance',
-                        'Noise Level',
-                        'Temperature',
-                     ].map((metric, idx) => (
-                        <View key={metric} style={styles.metricRow}>
-                           <Text
-                              style={[
-                                 styles.metricLabel,
-                                 { color: colors.textSecondary },
-                              ]}
-                           >
-                              {metric}
-                           </Text>
+                        {
+                           key: 'ease',
+                           label: 'Ease of Use',
+                           icon: 'touch-app',
+                        },
+                        {
+                           key: 'performance',
+                           label: 'Performance',
+                           icon: 'speed',
+                        },
+                        {
+                           key: 'noise',
+                           label: 'Noise Level',
+                           icon: 'volume-down',
+                        },
+                        {
+                           key: 'temperature',
+                           label: 'Temperature',
+                           icon: 'thermostat',
+                        },
+                     ].map(({ key, label, icon }) => (
+                        <View key={key} style={styles.metricRow}>
+                           <View style={styles.metricLabelRow}>
+                              <MaterialIcons
+                                 name={icon}
+                                 size={16}
+                                 color={colors.textMuted}
+                              />
+                              <Text
+                                 style={[
+                                    styles.metricLabel,
+                                    { color: colors.textSecondary },
+                                 ]}
+                              >
+                                 {label}
+                              </Text>
+                           </View>
                            <View style={styles.metricBar}>
                               <View
                                  style={[
@@ -239,8 +400,15 @@ export default function BundleSummaryScreen({ route }) {
                                     style={[
                                        styles.metricFill,
                                        {
-                                          backgroundColor: colors.primary,
-                                          width: `${75 + idx * 5}%`,
+                                          backgroundColor:
+                                             comfortProfile[key] >= 80
+                                                ? colors.success
+                                                : comfortProfile[key] >= 60
+                                                ? colors.primary
+                                                : comfortProfile[key] >= 40
+                                                ? colors.warning
+                                                : colors.error,
+                                          width: `${comfortProfile[key]}%`,
                                        },
                                     ]}
                                  />
@@ -251,7 +419,7 @@ export default function BundleSummaryScreen({ route }) {
                                     { color: colors.primary },
                                  ]}
                               >
-                                 {75 + idx * 5}
+                                 {comfortProfile[key]}
                               </Text>
                            </View>
                         </View>
@@ -259,18 +427,57 @@ export default function BundleSummaryScreen({ route }) {
                   </View>
 
                   <View style={styles.overallScore}>
-                     <Text
-                        style={[
-                           styles.overallLabel,
-                           { color: colors.textSecondary },
-                        ]}
-                     >
-                        Overall Comfort Score
-                     </Text>
+                     <View style={styles.overallLeft}>
+                        <MaterialIcons
+                           name={
+                              comfortProfile.overall >= 80
+                                 ? 'sentiment-very-satisfied'
+                                 : comfortProfile.overall >= 60
+                                 ? 'sentiment-satisfied'
+                                 : comfortProfile.overall >= 40
+                                 ? 'sentiment-neutral'
+                                 : 'sentiment-dissatisfied'
+                           }
+                           size={32}
+                           color={
+                              comfortProfile.overall >= 80
+                                 ? colors.success
+                                 : comfortProfile.overall >= 60
+                                 ? colors.primary
+                                 : comfortProfile.overall >= 40
+                                 ? colors.warning
+                                 : colors.error
+                           }
+                        />
+                        <View>
+                           <Text
+                              style={[
+                                 styles.overallLabel,
+                                 { color: colors.textSecondary },
+                              ]}
+                           >
+                              Overall Comfort Score
+                           </Text>
+                           <Text
+                              style={[
+                                 styles.overallSubtext,
+                                 { color: colors.textMuted },
+                              ]}
+                           >
+                              {comfortProfile.overall >= 80
+                                 ? 'Excellent'
+                                 : comfortProfile.overall >= 60
+                                 ? 'Good'
+                                 : comfortProfile.overall >= 40
+                                 ? 'Fair'
+                                 : 'Needs Improvement'}
+                           </Text>
+                        </View>
+                     </View>
                      <Text
                         style={[styles.overallValue, { color: colors.primary }]}
                      >
-                        82/100
+                        {comfortProfile.overall}/100
                      </Text>
                   </View>
                </View>
@@ -629,6 +836,27 @@ const styles = StyleSheet.create({
    },
    shippingNote: {
       fontSize: 10,
+      marginTop: 2,
+   },
+   comfortHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 16,
+   },
+   metricLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginBottom: 4,
+   },
+   overallLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+   },
+   overallSubtext: {
+      fontSize: 12,
       marginTop: 2,
    },
 });

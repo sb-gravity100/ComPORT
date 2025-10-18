@@ -7,6 +7,7 @@ import {
    StyleSheet,
    Modal,
    FlatList,
+   ScrollView,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -150,7 +151,12 @@ export default function BundlePart({
                      <Text
                         style={[styles.partPrice, { color: colors.primary }]}
                      >
-                        ₱{(part.selectedPrice || 0).toLocaleString()}
+                        ₱
+                        {(
+                           selectedSource?.price ||
+                           part.priceRange?.average ||
+                           0
+                        ).toLocaleString()}
                      </Text>
                   </View>
                   <View style={styles.actions}>
@@ -215,14 +221,31 @@ export default function BundlePart({
                   ]}
                >
                   <View style={styles.modalHeader}>
-                     <Text
-                        style={[
-                           styles.modalTitle,
-                           { color: colors.textPrimary },
-                        ]}
-                     >
-                        Select Shop
-                     </Text>
+                     <View style={styles.modalTitleContainer}>
+                        <MaterialIcons
+                           name="store"
+                           size={24}
+                           color={colors.primary}
+                        />
+                        <View>
+                           <Text
+                              style={[
+                                 styles.modalTitle,
+                                 { color: colors.textPrimary },
+                              ]}
+                           >
+                              Select Shop
+                           </Text>
+                           <Text
+                              style={[
+                                 styles.modalSubtitle,
+                                 { color: colors.textMuted },
+                              ]}
+                           >
+                              {part?.sources?.length || 0} available
+                           </Text>
+                        </View>
+                     </View>
                      <TouchableOpacity
                         onPress={() => setShowSourceModal(false)}
                         style={[
@@ -238,106 +261,208 @@ export default function BundlePart({
                      </TouchableOpacity>
                   </View>
 
-                  <FlatList
-                     data={part?.sources || []}
-                     keyExtractor={(item, index) => index.toString()}
-                     renderItem={({ item }) => (
-                        <TouchableOpacity
-                           style={[
-                              styles.sourceItem,
-                              {
-                                 backgroundColor: colors.surface,
-                                 borderColor:
-                                    selectedSource?.shopName === item.shopName
+                  <ScrollView
+                     style={styles.modalScroll}
+                     contentContainerStyle={styles.modalScrollContent}
+                     showsVerticalScrollIndicator={false}
+                  >
+                     {(part?.sources || []).map((item, index) => {
+                        const isSelected =
+                           selectedSource?.shopName === item.shopName;
+                        const totalCost =
+                           item.price + (item.shipping?.cost || 0);
+
+                        return (
+                           <TouchableOpacity
+                              key={index}
+                              style={[
+                                 styles.sourceItem,
+                                 {
+                                    backgroundColor: isSelected
+                                       ? theme.withOpacity(colors.primary, 0.1)
+                                       : colors.surface,
+                                    borderColor: isSelected
                                        ? colors.primary
                                        : colors.surfaceBorder,
-                              },
-                           ]}
-                           onPress={() => handleChangeSource(item)}
-                        >
-                           <View style={styles.sourceDetails}>
-                              <Text
-                                 style={[
-                                    styles.sourceName,
-                                    { color: colors.textPrimary },
-                                 ]}
-                              >
-                                 {item.shopName}
-                              </Text>
-                              <View style={styles.sourceRow}>
-                                 <Text
-                                    style={[
-                                       styles.sourcePrice,
-                                       { color: colors.primary },
-                                    ]}
-                                 >
-                                    ₱{item.price.toLocaleString()}
-                                 </Text>
-                                 {item.inStock ? (
-                                    <View
-                                       style={[
-                                          styles.stockBadge,
-                                          {
-                                             backgroundColor: theme.withOpacity(
-                                                colors.success,
-                                                0.1
-                                             ),
-                                          },
-                                       ]}
-                                    >
+                                 },
+                              ]}
+                              onPress={() => handleChangeSource(item)}
+                              activeOpacity={0.7}
+                           >
+                              <View style={styles.sourceContent}>
+                                 <View style={styles.sourceHeader}>
+                                    <View style={styles.sourceShopRow}>
+                                       <MaterialIcons
+                                          name="store"
+                                          size={18}
+                                          color={colors.primary}
+                                       />
                                        <Text
                                           style={[
-                                             styles.stockText,
-                                             { color: colors.success },
+                                             styles.sourceName,
+                                             { color: colors.textPrimary },
                                           ]}
                                        >
-                                          In Stock
+                                          {item.shopName}
                                        </Text>
                                     </View>
-                                 ) : (
-                                    <View
-                                       style={[
-                                          styles.stockBadge,
-                                          {
-                                             backgroundColor: theme.withOpacity(
-                                                colors.error,
-                                                0.1
-                                             ),
-                                          },
-                                       ]}
-                                    >
+                                    {isSelected && (
+                                       <View
+                                          style={[
+                                             styles.selectedBadge,
+                                             {
+                                                backgroundColor: colors.primary,
+                                             },
+                                          ]}
+                                       >
+                                          <MaterialIcons
+                                             name="check"
+                                             size={14}
+                                             color={colors.textDark}
+                                          />
+                                          <Text
+                                             style={[
+                                                styles.selectedText,
+                                                { color: colors.textDark },
+                                             ]}
+                                          >
+                                             Selected
+                                          </Text>
+                                       </View>
+                                    )}
+                                 </View>
+
+                                 <View style={styles.sourcePricing}>
+                                    <View style={styles.priceBreakdown}>
                                        <Text
                                           style={[
-                                             styles.stockText,
-                                             { color: colors.error },
+                                             styles.sourcePrice,
+                                             { color: colors.primary },
                                           ]}
                                        >
-                                          Out of Stock
+                                          ₱{item.price.toLocaleString()}
+                                       </Text>
+                                       {item.shipping?.cost > 0 && (
+                                          <Text
+                                             style={[
+                                                styles.shippingText,
+                                                { color: colors.textMuted },
+                                             ]}
+                                          >
+                                             + ₱{item.shipping.cost} shipping
+                                          </Text>
+                                       )}
+                                       {item.shipping?.cost === 0 &&
+                                          item.shipping?.available && (
+                                             <Text
+                                                style={[
+                                                   styles.shippingText,
+                                                   { color: colors.success },
+                                                ]}
+                                             >
+                                                Free shipping
+                                             </Text>
+                                          )}
+                                    </View>
+                                    <View style={styles.totalContainer}>
+                                       <Text
+                                          style={[
+                                             styles.totalLabel,
+                                             { color: colors.textMuted },
+                                          ]}
+                                       >
+                                          Total
+                                       </Text>
+                                       <Text
+                                          style={[
+                                             styles.totalPrice,
+                                             { color: colors.textPrimary },
+                                          ]}
+                                       >
+                                          ₱{totalCost.toLocaleString()}
                                        </Text>
                                     </View>
-                                 )}
+                                 </View>
+
+                                 <View style={styles.sourceFooter}>
+                                    {item.inStock ? (
+                                       <View
+                                          style={[
+                                             styles.stockBadge,
+                                             {
+                                                backgroundColor:
+                                                   theme.withOpacity(
+                                                      colors.success,
+                                                      0.1
+                                                   ),
+                                             },
+                                          ]}
+                                       >
+                                          <MaterialIcons
+                                             name="check-circle"
+                                             size={14}
+                                             color={colors.success}
+                                          />
+                                          <Text
+                                             style={[
+                                                styles.stockText,
+                                                { color: colors.success },
+                                             ]}
+                                          >
+                                             In Stock
+                                          </Text>
+                                       </View>
+                                    ) : (
+                                       <View
+                                          style={[
+                                             styles.stockBadge,
+                                             {
+                                                backgroundColor:
+                                                   theme.withOpacity(
+                                                      colors.error,
+                                                      0.1
+                                                   ),
+                                             },
+                                          ]}
+                                       >
+                                          <MaterialIcons
+                                             name="cancel"
+                                             size={14}
+                                             color={colors.error}
+                                          />
+                                          <Text
+                                             style={[
+                                                styles.stockText,
+                                                { color: colors.error },
+                                             ]}
+                                          >
+                                             Out of Stock
+                                          </Text>
+                                       </View>
+                                    )}
+                                    {item.shipping?.estimatedDays && (
+                                       <View style={styles.deliveryBadge}>
+                                          <MaterialIcons
+                                             name="local-shipping"
+                                             size={14}
+                                             color={colors.textMuted}
+                                          />
+                                          <Text
+                                             style={[
+                                                styles.deliveryText,
+                                                { color: colors.textMuted },
+                                             ]}
+                                          >
+                                             {item.shipping.estimatedDays}
+                                          </Text>
+                                       </View>
+                                    )}
+                                 </View>
                               </View>
-                              {item.shipping?.cost > 0 && (
-                                 <Text
-                                    style={[
-                                       styles.shippingText,
-                                       { color: colors.textMuted },
-                                    ]}
-                                 >
-                                    +₱{item.shipping.cost} shipping
-                                 </Text>
-                              )}
-                           </View>
-                           {selectedSource?.shopName === item.shopName && (
-                              <MaterialIcons
-                                 name="check-circle"
-                                 size={24}
-                                 color={colors.primary}
-                              />
-                           )}
-                        </TouchableOpacity>
-                     )}
-                  />
+                           </TouchableOpacity>
+                        );
+                     })}
+                  </ScrollView>
                </View>
             </View>
          </Modal>
@@ -411,25 +536,9 @@ const styles = StyleSheet.create({
       justifyContent: 'center',
    },
    selectText: { fontSize: 15, fontWeight: '600' },
-   sourceItem: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: 12,
-      marginVertical: 6,
-      borderWidth: 1,
-      borderRadius: 12,
-   },
-
    sourceDetails: {
       flex: 1,
       marginRight: 12,
-   },
-
-   sourceName: {
-      fontSize: 16,
-      fontWeight: '600',
-      marginBottom: 4,
    },
 
    sourceRow: {
@@ -459,23 +568,154 @@ const styles = StyleSheet.create({
       fontSize: 13,
       marginTop: 2,
    },
+
+   shippingBadge: {
+      fontSize: 11,
+      fontWeight: '600',
+   },
+   modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      justifyContent: 'flex-end',
+   },
+   modalContent: {
+      height: 500,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      paddingBottom: 20,
+   },
    modalHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 16,
       borderBottomWidth: 1,
-      borderColor: '#ccc', // or use colors.surfaceBorder if theme-aware
+      borderBottomColor: 'rgba(255, 255, 255, 0.1)',
    },
-
+   modalTitleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+   },
    modalTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+   },
+   modalSubtitle: {
+      fontSize: 13,
+      fontWeight: '600',
+      marginTop: 2,
+   },
+   closeButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      justifyContent: 'center',
+      alignItems: 'center',
+   },
+   modalScroll: {
+      flex: 1,
+   },
+   modalScrollContent: {
+      padding: 16,
+      paddingBottom: 24,
+   },
+   sourceItem: {
+      borderRadius: 16,
+      borderWidth: 2,
+      marginBottom: 12,
+      overflow: 'hidden',
+   },
+   sourceContent: {
+      padding: 16,
+   },
+   sourceHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+   },
+   sourceShopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+   },
+   sourceName: {
+      fontSize: 16,
+      fontWeight: '700',
+   },
+   selectedBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+   },
+   selectedText: {
+      fontSize: 11,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+   },
+   sourcePricing: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+      marginBottom: 12,
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+   },
+   priceBreakdown: {
+      flex: 1,
+   },
+   sourcePrice: {
+      fontSize: 20,
+      fontWeight: '800',
+      marginBottom: 4,
+   },
+   shippingText: {
+      fontSize: 12,
+      fontWeight: '600',
+   },
+   totalContainer: {
+      alignItems: 'flex-end',
+   },
+   totalLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      marginBottom: 4,
+   },
+   totalPrice: {
       fontSize: 18,
       fontWeight: '700',
    },
-
-   closeButton: {
-      padding: 8,
+   sourceFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+   },
+   stockBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
       borderRadius: 8,
+   },
+   stockText: {
+      fontSize: 12,
+      fontWeight: '700',
+   },
+   deliveryBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+   },
+   deliveryText: {
+      fontSize: 12,
+      fontWeight: '600',
    },
 });

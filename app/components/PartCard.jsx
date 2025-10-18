@@ -100,28 +100,27 @@ export default function PartCard({ product, onPress }) {
 
          <View style={styles.footer}>
             <View style={styles.priceContainer}>
-               {product.priceRange.min === product.priceRange.max ? (
-                  <Text style={[styles.price, { color: colors.primary }]}>
-                     ₱{product.priceRange.average.toLocaleString()}
-                  </Text>
-               ) : (
-                  <>
-                     <Text
-                        style={[styles.priceRange, { color: colors.primary }]}
-                     >
-                        ₱{product.priceRange.min.toLocaleString()} - ₱
-                        {product.priceRange.max.toLocaleString()}
-                     </Text>
-                     <Text
-                        style={[styles.avgPrice, { color: colors.textMuted }]}
-                     >
-                        Avg: ₱
-                        {Math.round(
-                           product.priceRange.average
-                        ).toLocaleString()}
-                     </Text>
-                  </>
-               )}
+               <Text style={[styles.priceLabel, { color: colors.textMuted }]}>
+                  Price Range
+               </Text>
+               <Text style={[styles.priceRange, { color: colors.primary }]}>
+                  ₱{product.priceRange.min.toLocaleString()} - ₱
+                  {product.priceRange.max.toLocaleString()}
+               </Text>
+               <Text style={[styles.avgPrice, { color: colors.textMuted }]}>
+                  Avg: ₱
+                  {Math.round(product.priceRange.average).toLocaleString()}
+               </Text>
+            </View>
+
+            <View style={styles.availability}>
+               <MaterialIcons name="store" size={14} color={colors.textMuted} />
+               <Text
+                  style={[styles.shopsText, { color: colors.textSecondary }]}
+               >
+                  {product.totalSources} shop
+                  {product.totalSources !== 1 ? 's' : ''}
+               </Text>
             </View>
 
             {product.ratings?.overall?.average > 0 && (
@@ -279,5 +278,20 @@ const styles = StyleSheet.create({
       fontWeight: '700',
       minWidth: 24,
       textAlign: 'right',
+   },
+   availability: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginTop: 4,
+   },
+   shopsText: {
+      fontSize: 12,
+      fontWeight: '600',
+   },
+   priceLabel: {
+      fontSize: 10,
+      fontWeight: '600',
+      marginBottom: 2,
    },
 });

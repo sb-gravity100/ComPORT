@@ -70,55 +70,42 @@ export default function BundleBuilderScreen() {
    };
 
    const selectPart = (product) => {
-      // If product has multiple sources, show source selector
-      if (product.sources && product.sources.length > 1) {
-         // For now, auto-select the cheapest in-stock source
-         const inStockSources = product.sources.filter((s) => s.inStock);
-         const selectedSource =
-            inStockSources.length > 0
-               ? inStockSources.reduce((min, curr) =>
-                    curr.price < min.price ? curr : min
-                 )
-               : product.sources[0];
-
-         setSelectedSources((prev) => ({
-            ...prev,
-            [currentCategory.id]: selectedSource,
-         }));
-
-         // Use the selected source price
-         const previousPrice =
-            selectedParts[currentCategory.id]?.selectedPrice || 0;
-
-         setSelectedParts((prev) => ({
-            ...prev,
-            [currentCategory.id]: {
-               ...product,
-               selectedPrice: selectedSource.price,
-               selectedShop: selectedSource.shopName,
-               selectedSourceUrl: selectedSource.productUrl,
-            },
-         }));
-
-         setTotalPrice((prev) => prev - previousPrice + selectedSource.price);
-      } else {
-         // Single source or no sources
-         const price = product.priceRange?.average || product.price || 0;
-         const previousPrice =
-            selectedParts[currentCategory.id]?.selectedPrice || 0;
-
-         setSelectedParts((prev) => ({
-            ...prev,
-            [currentCategory.id]: {
-               ...product,
-               selectedPrice: price,
-               selectedShop: product.sources?.[0]?.shopName || 'N/A',
-            },
-         }));
-
-         setTotalPrice((prev) => prev - previousPrice + price);
+      if (!product.sources || product.sources.length === 0) {
+         Alert.alert('Error', 'No sources available for this product');
+         return;
       }
 
+      // Auto-select cheapest in-stock source, or cheapest overall
+      const inStockSources = product.sources.filter((s) => s.inStock);
+      const sourcesToConsider =
+         inStockSources.length > 0 ? inStockSources : product.sources;
+
+      const selectedSource = sourcesToConsider.reduce((min, curr) => {
+         const minTotal = min.price + (min.shipping?.cost || 0);
+         const currTotal = curr.price + (curr.shipping?.cost || 0);
+         return currTotal < minTotal ? curr : min;
+      });
+
+      setSelectedSources((prev) => ({
+         ...prev,
+         [currentCategory.id]: selectedSource,
+      }));
+
+      const previousPrice =
+         selectedParts[currentCategory.id]?.selectedPrice || 0;
+
+      setSelectedParts((prev) => ({
+         ...prev,
+         [currentCategory.id]: {
+            ...product,
+            selectedPrice: selectedSource.price,
+            selectedShop: selectedSource.shopName,
+            selectedSourceUrl: selectedSource.productUrl,
+            selectedShipping: selectedSource.shipping,
+         },
+      }));
+
+      setTotalPrice((prev) => prev - previousPrice + selectedSource.price);
       setModalVisible(false);
    };
 
@@ -143,12 +130,12 @@ export default function BundleBuilderScreen() {
       if (!bundleName.trim()) return;
       if (missingRequired.length > 0) return;
 
-      // Prepare bundle data with selected sources
       const bundleData = {
          name: bundleName,
          parts: selectedParts,
          sources: selectedSources,
          totalPrice,
+         // comfortProfile, // Add this
       };
 
       navigation.navigate('Summary', { bundleData });
@@ -159,27 +146,25 @@ export default function BundleBuilderScreen() {
       if (!currentPart) return;
 
       const previousPrice = currentPart.selectedPrice || 0;
-      const updatedPrice = newSource.price || 0;
+      const newPrice = newSource.price || 0;
 
-      // Update selectedSources
       setSelectedSources((prev) => ({
          ...prev,
          [categoryId]: newSource,
       }));
 
-      // Update selectedParts with new source info
       setSelectedParts((prev) => ({
          ...prev,
          [categoryId]: {
             ...prev[categoryId],
-            selectedPrice: updatedPrice,
+            selectedPrice: newPrice,
             selectedShop: newSource.shopName,
             selectedSourceUrl: newSource.productUrl,
+            selectedShipping: newSource.shipping,
          },
       }));
 
-      // Update total price
-      setTotalPrice((prev) => prev - previousPrice + updatedPrice);
+      setTotalPrice((prev) => prev - previousPrice + newPrice);
    };
 
    return (

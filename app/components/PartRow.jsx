@@ -76,17 +76,16 @@ export default function PartRow({
          </View>
          <View style={styles.priceColumn}>
             <Text style={[styles.partPriceSmall, { color: colors.primary }]}>
-               ₱
-               {(
-                  part.selectedPrice ||
-                  part.priceRange?.average ||
-                  part.price ||
-                  0
-               ).toLocaleString()}
+               ₱{(source?.price || part.selectedPrice || 0).toLocaleString()}
             </Text>
             {source?.shipping?.cost > 0 && (
                <Text style={[styles.shippingNote, { color: colors.textMuted }]}>
                   +₱{source.shipping.cost} shipping
+               </Text>
+            )}
+            {source?.shipping?.cost === 0 && source?.shipping?.available && (
+               <Text style={[styles.shippingNote, { color: colors.success }]}>
+                  Free shipping
                </Text>
             )}
          </View>

@@ -76,13 +76,44 @@ export const getBundle = async (id) => {
 
 export const createBundle = async (bundleData) => {
    try {
-      const { data } = await api.post('/bundles', bundleData);
+      // Transform bundleData.parts to products array
+      const products = Object.entries(bundleData.parts).map(
+         ([category, part]) => ({
+            product: part._id,
+            category,
+         })
+      );
+
+      // Extract sources with proper structure
+      const sources = {};
+      Object.entries(bundleData.sources || {}).forEach(([category, source]) => {
+         sources[category] = {
+            shopName: source.shopName,
+            price: source.price,
+            productUrl: source.productUrl,
+            shipping: source.shipping || { available: false, cost: 0 },
+         };
+      });
+
+      const payload = {
+         name: bundleData.name,
+         products,
+         sources,
+         notes: bundleData.notes || '',
+         compatibilityScore: bundleData.compatibilityScore || 0,
+         comfortProfile: bundleData.comfortProfile || {},
+         isPublic: bundleData.isPublic || false,
+      };
+
+      const { data } = await api.post('/bundles', payload);
       return data;
    } catch (error) {
-      return { error: true, message: error.response?.data?.message };
+      return {
+         error: true,
+         message: error.response?.data?.message || error.message,
+      };
    }
 };
-
 export const updateBundle = async (id, bundleData) => {
    try {
       const { data } = await api.put(`/bundles/${id}`, bundleData);
