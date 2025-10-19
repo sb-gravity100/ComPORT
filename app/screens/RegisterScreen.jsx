@@ -17,13 +17,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import { useToast } from '../context/ToastContext';
 
 export default function RegisterScreen() {
    const navigation = useNavigation();
    const { theme, isDark, toggleTheme } = useTheme();
    const { colors, gradients, spacing } = theme;
    const { onRegister } = useAuth();
+   const { showToast } = useToast();
 
    const [username, setUsername] = useState('');
    const [email, setEmail] = useState('');

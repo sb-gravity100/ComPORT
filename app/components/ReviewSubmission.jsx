@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 import { createReview } from '../services/api';
 
 export default function ReviewSubmission({
@@ -21,25 +22,28 @@ export default function ReviewSubmission({
 }) {
    const { theme } = useTheme();
    const { colors } = theme;
+   const { showToast } = useToast();
 
    const [rating, setRating] = useState(0);
    const [comment, setComment] = useState('');
    const [comfortRatings, setComfortRatings] = useState({
-      ease: 0,
-      performance: 0,
-      noise: 0,
-      temperature: 0,
+      ease: 3,
+      performance: 3,
+      noise: 3,
+      temperature: 3,
    });
    const [submitting, setSubmitting] = useState(false);
 
    const handleSubmit = async () => {
       if (rating === 0) {
-         Alert.alert('Error', 'Please provide a rating');
+         showToast('Please provide a rating', 'warning'); // Replace Alert
+         onClose();
          return;
       }
 
       if (!comment.trim()) {
-         Alert.alert('Error', 'Please write a comment');
+         showToast('Please write a comment', 'warning'); // Replace Alert
+         onClose();
          return;
       }
 
@@ -61,9 +65,10 @@ export default function ReviewSubmission({
       setSubmitting(false);
 
       if (result.error) {
-         Alert.alert('Error', result.message || 'Failed to submit review');
+         showToast('Failed to submit review', 'error'); // Replace Alert
+         onClose();
       } else {
-         Alert.alert('Success', 'Review submitted successfully!');
+         showToast('Review submitted successfully!', 'success'); // Replace Alert
          resetForm();
          onSubmitSuccess?.();
          onClose();
@@ -73,7 +78,7 @@ export default function ReviewSubmission({
    const resetForm = () => {
       setRating(0);
       setComment('');
-      setComfortRatings({ ease: 0, performance: 0, noise: 0, temperature: 0 });
+      setComfortRatings({ ease: 3, performance: 3, noise: 3, temperature: 3 });
    };
 
    const renderStars = (currentRating, onPress) => {

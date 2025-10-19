@@ -16,12 +16,14 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { Keyboard } from 'react-native';
+import { useToast } from '../context/ToastContext';
 
 export default function LoginScreen() {
    const navigation = useNavigation();
    const { theme, isDark, toggleTheme } = useTheme();
    const { colors, gradients } = theme;
    const { onLogin, authState } = useAuth();
+   const { showToast } = useToast();
 
    const passwordRef = useRef(null);
 
@@ -57,6 +59,9 @@ export default function LoginScreen() {
                },
             ],
          });
+         setTimeout(() => {
+            showToast('Logged In!', 100000000);
+         }, 100);
       }
    }, [authState]);
 
@@ -76,27 +81,26 @@ export default function LoginScreen() {
       const result = await onLogin(username, password);
       setLoading(false);
 
-      // console.log(result);
-
       if (result?.error) {
          const newErrors = { username: '', password: '' };
          if (result.message?.toLowerCase().includes('user')) {
             newErrors.username = result.message;
          } else if (result.message?.toLowerCase().includes('password')) {
             newErrors.password = result.message;
-         } else {
-            // Alert.alert('Login Failed', result.message || 'Please try again.');
          }
          setErrors(newErrors);
+         // Optionally add toast for general errors
+         if (
+            !result.message?.toLowerCase().includes('user') &&
+            !result.message?.toLowerCase().includes('password')
+         ) {
+            showToast(result.message || 'Login failed', 'error');
+         }
       } else {
          console.log('Successful Login');
          navigation.reset({
             index: 0,
-            routes: [
-               {
-                  name: 'Main',
-               },
-            ],
+            routes: [{ name: 'Main' }],
          });
       }
    };

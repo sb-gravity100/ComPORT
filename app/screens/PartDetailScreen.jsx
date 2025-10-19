@@ -14,6 +14,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { getProduct, getReviews } from '../services/api';
 import { useNavigation } from '@react-navigation/native';
+import ReviewSubmission from '../components/ReviewSubmission';
 
 export default function PartDetailScreen({ route }) {
    const { partId } = route.params;
@@ -25,6 +26,7 @@ export default function PartDetailScreen({ route }) {
    const [reviews, setReviews] = useState([]);
    const [loading, setLoading] = useState(true);
    const [selectedSource, setSelectedSource] = useState(null);
+   const [showReviewModal, setShowReviewModal] = useState(false);
 
    useEffect(() => {
       fetchData();
@@ -84,6 +86,10 @@ export default function PartDetailScreen({ route }) {
          </LinearGradient>
       );
    }
+
+   const handleReviewSuccess = () => {
+      fetchData(); // Refresh reviews after submission
+   };
 
    const bestDeal = getBestDeal();
 
@@ -594,13 +600,14 @@ export default function PartDetailScreen({ route }) {
                            { color: colors.textPrimary },
                         ]}
                      >
-                        Community Reviews ({reviews.length})
+                        Reviews ({reviews.length})
                      </Text>
                      <TouchableOpacity
                         style={[
                            styles.addReviewButton,
                            { backgroundColor: colors.primary },
                         ]}
+                        onPress={() => setShowReviewModal(true)} // Add this
                      >
                         <MaterialIcons
                            name="add"
@@ -685,6 +692,12 @@ export default function PartDetailScreen({ route }) {
                </View>
             </ScrollView>
          </LinearGradient>
+         <ReviewSubmission
+            visible={showReviewModal}
+            onClose={() => setShowReviewModal(false)}
+            productId={partId}
+            onSubmitSuccess={handleReviewSuccess}
+         />
       </>
    );
 }

@@ -7,6 +7,7 @@ import { AuthProvider } from './context/AuthContext';
 import { LogBox } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { View } from 'react-native';
+import { ToastProvider } from './context/ToastContext';
 
 LogBox.ignoreAllLogs(true);
 
@@ -24,7 +25,9 @@ export default function App() {
       <ThemeProvider>
          <PaperProvider>
             <AuthProvider>
-               <StackNavigator />
+               <ToastProvider>
+                  <StackNavigator />
+               </ToastProvider>
             </AuthProvider>
          </PaperProvider>
       </ThemeProvider>

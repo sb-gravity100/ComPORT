@@ -19,6 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import { getProducts } from '../services/api';
 import PartCard from '../components/PartCard';
 import BundlePart from '../components/BundlePart';
+import { useToast } from '../context/ToastContext';
 
 const CATEGORIES = [
    { id: 'CPU', name: 'Processor', icon: 'memory', required: true },
@@ -39,6 +40,7 @@ export default function BundleBuilderScreen() {
    const { theme, isDark } = useTheme();
    const { colors, gradients } = theme;
    const navigation = useNavigation();
+   const { showToast } = useToast();
 
    const [bundleName, setBundleName] = useState('');
    const [selectedParts, setSelectedParts] = useState({});
@@ -127,8 +129,15 @@ export default function BundleBuilderScreen() {
    };
 
    const handleSaveBundle = () => {
-      if (!bundleName.trim()) return;
-      if (missingRequired.length > 0) return;
+      if (!bundleName.trim()) {
+         showToast('Missing bundle name!', 'error');
+         return;
+      }
+      if (missingRequired.length > 0) {
+         showToast('Missing requirements!', 'error');
+
+         return;
+      }
 
       const bundleData = {
          name: bundleName,
