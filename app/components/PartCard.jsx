@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -15,7 +15,7 @@ export default function PartCard({ product, onPress }) {
          Motherboard: 'dashboard',
          Storage: 'sd-storage',
          PSU: 'power',
-         Case: 'computer',
+         Case: 'ad-units',
       };
       return icons[category] || 'devices';
    };
@@ -118,8 +118,8 @@ export default function PartCard({ product, onPress }) {
                <Text
                   style={[styles.shopsText, { color: colors.textSecondary }]}
                >
-                  {product.totalSources} shop
-                  {product.totalSources !== 1 ? 's' : ''}
+                  {product.sources.length} shop
+                  {product.sources.length !== 1 ? 's' : ''}
                </Text>
             </View>
 

@@ -15,6 +15,7 @@ import { useTheme } from '../context/ThemeContext';
 import { getProduct, getReviews } from '../services/api';
 import { useNavigation } from '@react-navigation/native';
 import ReviewSubmission from '../components/ReviewSubmission';
+import SpecsModal from '../components/SpecsModal';
 
 export default function PartDetailScreen({ route }) {
    const { partId } = route.params;
@@ -27,6 +28,7 @@ export default function PartDetailScreen({ route }) {
    const [loading, setLoading] = useState(true);
    const [selectedSource, setSelectedSource] = useState(null);
    const [showReviewModal, setShowReviewModal] = useState(false);
+   const [showSpecModal, setShowSpecModal] = useState(false);
 
    useEffect(() => {
       fetchData();
@@ -179,7 +181,7 @@ export default function PartDetailScreen({ route }) {
                            styles.stockBadge,
                            {
                               backgroundColor: theme.withOpacity(
-                                 product.availableAt > 0
+                                 product.availableAt
                                     ? colors.success
                                     : colors.error,
                                  0.1
@@ -189,13 +191,11 @@ export default function PartDetailScreen({ route }) {
                      >
                         <MaterialIcons
                            name={
-                              product.availableAt > 0
-                                 ? 'check-circle'
-                                 : 'cancel'
+                              product.availableAt ? 'check-circle' : 'cancel'
                            }
                            size={16}
                            color={
-                              product.availableAt > 0
+                              product.availableAt
                                  ? colors.success
                                  : colors.error
                            }
@@ -204,14 +204,13 @@ export default function PartDetailScreen({ route }) {
                            style={[
                               styles.stockText,
                               {
-                                 color:
-                                    product.availableAt > 0
-                                       ? colors.success
-                                       : colors.error,
+                                 color: product.availableAt
+                                    ? colors.success
+                                    : colors.error,
                               },
                            ]}
                         >
-                           {product.availableAt > 0
+                           {product.availableAt
                               ? `${product.availableAt} shop${
                                    product.availableAt !== 1 ? 's' : ''
                                 }`
@@ -550,36 +549,57 @@ export default function PartDetailScreen({ route }) {
                         },
                      ]}
                   >
-                     <Text
-                        style={[
-                           styles.sectionTitle,
-                           { color: colors.textPrimary },
-                        ]}
-                     >
-                        Specifications
-                     </Text>
-                     {Object.entries(product.specifications).map(
-                        ([key, value]) => (
-                           <View key={key} style={styles.specRow}>
-                              <Text
-                                 style={[
-                                    styles.specKey,
-                                    { color: colors.textSecondary },
-                                 ]}
-                              >
-                                 {key}
-                              </Text>
-                              <Text
-                                 style={[
-                                    styles.specValue,
-                                    { color: colors.textPrimary },
-                                 ]}
-                              >
-                                 {value}
-                              </Text>
-                           </View>
-                        )
-                     )}
+                     <View style={styles.specsHeader}>
+                        <Text
+                           style={[
+                              styles.sectionTitle,
+                              { color: colors.textPrimary },
+                           ]}
+                        >
+                           Specifications
+                        </Text>
+                        <TouchableOpacity
+                           style={[
+                              styles.addReviewButton,
+                              { backgroundColor: colors.primary },
+                           ]}
+                           onPress={() => setShowSpecModal(true)}
+                        >
+                           <MaterialIcons
+                              name="more-horiz"
+                              size={20}
+                              color={colors.textDark}
+                           />
+                           <Text
+                              style={[
+                                 styles.addReviewText,
+                                 { color: colors.textDark },
+                              ]}
+                           >
+                              More
+                           </Text>
+                        </TouchableOpacity>
+                     </View>
+                     {product.descriptions.map((d) => (
+                        <View key={d.name} style={styles.specRow}>
+                           <Text
+                              style={[
+                                 styles.specKey,
+                                 { color: colors.textSecondary },
+                              ]}
+                           >
+                              {d.name}
+                           </Text>
+                           <Text
+                              style={[
+                                 styles.specValue,
+                                 { color: colors.textPrimary },
+                              ]}
+                           >
+                              {d.description}
+                           </Text>
+                        </View>
+                     ))}
                   </View>
                )}
 
@@ -697,6 +717,11 @@ export default function PartDetailScreen({ route }) {
             onClose={() => setShowReviewModal(false)}
             productId={partId}
             onSubmitSuccess={handleReviewSuccess}
+         />
+         <SpecsModal
+            visible={showSpecModal}
+            onClose={() => setShowSpecModal(false)}
+            product={product}
          />
       </>
    );
@@ -1009,5 +1034,11 @@ const styles = StyleSheet.create({
       textAlign: 'center',
       fontSize: 16,
       fontWeight: '600',
+   },
+   specsHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
    },
 });

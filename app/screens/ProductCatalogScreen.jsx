@@ -100,7 +100,17 @@ export default function ProductCatalogScreen() {
 
       const result = await getProducts(filters);
       if (!result.error) {
-         setProducts(result.products);
+         setProducts(
+            result.products.map((a) => {
+               // a.okShops = 0;
+               // a.sources.forEach((e) => {
+               //    if (e.inStock) {
+               //       a.okShops += 1;
+               //    }
+               // });
+               return a;
+            })
+         );
       }
       setLoading(false);
    };

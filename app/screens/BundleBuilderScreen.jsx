@@ -20,6 +20,11 @@ import { getProducts } from '../services/api';
 import PartCard from '../components/PartCard';
 import BundlePart from '../components/BundlePart';
 import { useToast } from '../context/ToastContext';
+import {
+   checkBundleCompatibility,
+   getBundleComfortRating,
+} from '../services/api';
+import { checkCompatibility } from '../utils/comfortUtils';
 
 const CATEGORIES = [
    { id: 'CPU', name: 'Processor', icon: 'memory', required: true },
@@ -33,7 +38,7 @@ const CATEGORIES = [
    },
    { id: 'Storage', name: 'Storage', icon: 'sd-storage', required: true },
    { id: 'PSU', name: 'Power Supply', icon: 'power', required: true },
-   { id: 'Case', name: 'Case', icon: 'inventory', required: false },
+   { id: 'Case', name: 'Case', icon: 'ad-units', required: false },
 ];
 
 export default function BundleBuilderScreen() {
@@ -52,6 +57,10 @@ export default function BundleBuilderScreen() {
    const [availableProducts, setAvailableProducts] = useState([]);
    const [loadingProducts, setLoadingProducts] = useState(false);
    const [selectedSources, setSelectedSources] = useState({});
+   const [compatibilityReport, setCompatibilityReport] = useState(null);
+   const [isCompatible, setIsCompatible] = useState(false);
+   const [checkingCompatibility, setCheckingCompatibility] = useState(false);
+   const [compatibilityIssues, setCompatibilityIssues] = useState([]);
 
    const requiredCategories = CATEGORIES.filter((c) => c.required);
    const missingRequired = requiredCategories
@@ -174,6 +183,35 @@ export default function BundleBuilderScreen() {
       }));
 
       setTotalPrice((prev) => prev - previousPrice + newPrice);
+   };
+
+   useEffect(() => {
+      if (Object.keys(selectedParts).length >= 2) {
+         checkBundleCompatibility();
+      } else {
+         setCompatibilityReport(null);
+      }
+      setIsCompatible(true);
+      setCompatibilityIssues([]);
+      for (let i in compatibilityReport?.checks) {
+         // console.log(i);
+         if (!compatibilityReport?.checks[i]?.compatible) {
+            setIsCompatible(false);
+            i.issues?.forEach((e) => setCompatibilityIssues((i) => [...i, e]));
+            // console.log(i);
+            // console.log(compatibilityIssues);
+         }
+      }
+   }, [selectedParts]);
+
+   const checkBundleCompatibility = async () => {
+      setCheckingCompatibility(true);
+
+      // Use frontend compatibility check
+      const report = checkCompatibility(selectedParts);
+      setCompatibilityReport(report);
+
+      setCheckingCompatibility(false);
    };
 
    return (

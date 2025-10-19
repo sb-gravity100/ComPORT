@@ -43,27 +43,16 @@ function checkRAMMotherboardCompatibility(ram, motherboard) {
       return { compatible: true, issues: [] };
    }
 
-   const ramType = ram.specifications?.type?.toLowerCase() || '';
+   const ramType = ram.specifications?.memoryType?.toLowerCase() || '';
    const mbMemoryType =
       motherboard.specifications?.memoryType?.toLowerCase() || '';
 
-   if (ramType && mbMemoryType) {
-      const ramGen = ramType.includes('ddr5')
-         ? 'ddr5'
-         : ramType.includes('ddr4')
-         ? 'ddr4'
-         : 'ddr3';
-      const mbGen = mbMemoryType.includes('ddr5')
-         ? 'ddr5'
-         : mbMemoryType.includes('ddr4')
-         ? 'ddr4'
-         : 'ddr3';
+   console.log(ramType, mbMemoryType);
 
-      if (ramGen !== mbGen) {
-         issues.push(
-            `Memory type mismatch: RAM (${ramType}) vs Motherboard (${mbMemoryType})`
-         );
-      }
+   if (ramType !== mbMemoryType) {
+      issues.push(
+         `Memory type mismatch: RAM (${ramGen}) vs Motherboard (${mbGen})`
+      );
    }
 
    return {
@@ -85,15 +74,13 @@ function checkPSUWattage(parts) {
 
    // CPU
    if (parts.CPU) {
-      const cpuTDP =
-         parseInt(parts.CPU.specifications?.TDP?.replace('W', '')) || 65;
+      const cpuTDP = parseInt(parts.CPU.specifications?.tdp) || 65;
       estimatedWattage += cpuTDP;
    }
 
    // GPU
    if (parts.GPU) {
-      const gpuTDP =
-         parseInt(parts.GPU.specifications?.TDP?.replace('W', '')) || 150;
+      const gpuTDP = parseInt(parts.GPU.specifications?.tdp) || 150;
       estimatedWattage += gpuTDP;
    }
 
@@ -104,7 +91,7 @@ function checkPSUWattage(parts) {
 
    // Storage
    if (parts.Storage) {
-      const isSSD = parts.Storage.specifications?.type
+      const isSSD = parts.Storage.specifications?.driveType
          ?.toLowerCase()
          .includes('ssd');
       estimatedWattage += isSSD ? 10 : 20;
@@ -114,9 +101,7 @@ function checkPSUWattage(parts) {
    const recommendedWattage = Math.ceil(estimatedWattage * 1.2);
 
    // Check PSU
-   const psuWattage = parts.PSU
-      ? parseInt(parts.PSU.specifications?.wattage?.replace('W', '')) || 500
-      : 500;
+   const psuWattage = parseInt(parts?.PSU?.specifications?.wattage) || 500;
 
    if (psuWattage < estimatedWattage) {
       issues.push(
@@ -144,23 +129,27 @@ function checkPSUWattage(parts) {
  * @param {Object} pcCase - Case product
  * @returns {Object} { compatible, issues }
  */
-function checkGPUCaseCompatibility(gpu, pcCase) {
+function checkMotherBCaseCompatibility(board, pcCase) {
    const issues = [];
+   let compat = false;
+   let mbTypeName = '';
 
-   if (!gpu || !pcCase) {
+   if (!board || !pcCase) {
       return { compatible: true, issues: [] };
    }
 
-   const gpuLength =
-      parseInt(gpu.specifications?.length?.replace('mm', '')) || 280;
-   const maxGPULength =
-      parseInt(pcCase.specifications?.maxGPULength?.replace('mm', '')) || 320;
+   const mbType = board.specifications?.formFactor || '';
+   const caseType = pcCase.specifications?.motherboardSupport.split(', ') || [];
 
-   if (gpuLength > maxGPULength) {
+   if (!caseType.includes(mbType)) {
       issues.push(
-         `GPU too long: ${gpuLength}mm (case supports up to ${maxGPULength}mm)`
+         `Motherboard (${mbTypeName}) is not compatible with Case (${pcCase.compatibilityTags.join(
+            ', '
+         )})`
       );
    }
+
+   console.log(issues);
 
    return {
       compatible: issues.length === 0,
@@ -215,11 +204,14 @@ export function checkCompatibility(parts) {
    }
 
    // GPU-Case compatibility
-   const gpuCaseCheck = checkGPUCaseCompatibility(parts.GPU, parts.Case);
-   report.checks.gpuCase = gpuCaseCheck;
-   if (!gpuCaseCheck.compatible) {
+   const boardCaseCheck = checkMotherBCaseCompatibility(
+      parts.Motherboard,
+      parts.Case
+   );
+   report.checks.boardCase = boardCaseCheck;
+   if (!boardCaseCheck.compatible) {
       report.compatible = false;
-      report.issues.push(...gpuCaseCheck.issues);
+      report.issues.push(...boardCaseCheck.issues);
    }
 
    // Calculate compatibility score (0-100)
@@ -229,6 +221,7 @@ export function checkCompatibility(parts) {
    ).length;
    report.score =
       totalChecks > 0 ? Math.round((passedChecks / totalChecks) * 100) : 100;
+   console.log(report);
 
    return report;
 }

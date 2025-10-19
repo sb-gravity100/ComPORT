@@ -132,4 +132,40 @@ export const deleteBundle = async (id) => {
    }
 };
 
+export const getBundleComfortRating = async (parts) => {
+   try {
+      const { data } = await api.post('/ml/comfort/bundle', { parts });
+      return data;
+   } catch (error) {
+      return {
+         error: true,
+         message: error.response?.data?.message || 'Comfort rating failed',
+      };
+   }
+};
+
+export const getProductComfortRating = async (productId) => {
+   try {
+      const { data } = await api.get(`/ml/comfort/product/${productId}`);
+      return data;
+   } catch (error) {
+      return {
+         error: true,
+         message: error.response?.data?.message || 'Comfort rating failed',
+      };
+   }
+};
+
+export const getMLStatus = async () => {
+   try {
+      const { data } = await api.get('/ml/status');
+      return data;
+   } catch (error) {
+      return {
+         error: true,
+         message: error.response?.data?.message || 'ML status check failed',
+      };
+   }
+};
+
 export default api;
