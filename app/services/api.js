@@ -1,15 +1,6 @@
 import axios from 'axios';
-import Constants from 'expo-constants';
 
-const DEV_URL = Constants.expoGoConfig?.debuggerHost
-   ?.split(':')
-   .shift()
-   ?.concat(':6600/api');
-
-const API_URL =
-   process.env.NODE_ENV !== 'production'
-      ? 'http://' + DEV_URL
-      : process.env.EXPO_PUBLIC_API_URL + '/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export const api = axios.create({
    baseURL: API_URL,

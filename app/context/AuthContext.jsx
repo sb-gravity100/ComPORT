@@ -8,7 +8,7 @@ import api from '../services/api';
 
 const AuthContext = createContext({});
 
-let API_URL;
+let API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export function useAuth() {
    return useContext(AuthContext);
@@ -20,16 +20,7 @@ export function AuthProvider({ children }) {
    });
 
    useEffect(() => {
-      const DEV_URL = Constants.expoGoConfig?.debuggerHost
-         ?.split(':')
-         .shift()
-         ?.concat(':6600/api');
-      API_URL =
-         process.env.NODE_ENV !== 'production'
-            ? `http://${DEV_URL}`
-            : process.env.EXPO_PUBLIC_API_URL + '/api';
       // console.log(Constants.expoGoConfig);
-      console.log(API_URL);
       console.log(API_URL);
       const loadToken = async () => {
          const token = await SecureStore.getItemAsync(
