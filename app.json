@@ -1,7 +1,7 @@
 {
    "expo": {
       "scheme": "comport",
-      "name": "ComPORT_Main",
+      "name": "Comport",
       "slug": "ComPORT",
       "version": "1.0.0",
       "orientation": "portrait",
@@ -21,7 +21,8 @@
             "foregroundImage": "./assets/adaptive-icon.png",
             "backgroundColor": "#ffffff"
          },
-         "edgeToEdgeEnabled": true
+         "edgeToEdgeEnabled": true,
+         "package": "com.sbgravity100.ComPORT"
       },
       "web": {
          "favicon": "./assets/favicon.png"
@@ -39,6 +40,12 @@
                }
             }
          ]
-      ]
+      ],
+      "extra": {
+         "router": {},
+         "eas": {
+            "projectId": "4869a470-39f2-4184-82dc-384fc9535112"
+         }
+      }
    }
 }

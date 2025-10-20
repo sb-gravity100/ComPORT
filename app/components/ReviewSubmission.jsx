@@ -65,7 +65,8 @@ export default function ReviewSubmission({
       setSubmitting(false);
 
       if (result.error) {
-         showToast('Failed to submit review', 'error'); // Replace Alert
+         console.log(result);
+         showToast(result.message, 'error'); // Replace Alert
          onClose();
       } else {
          showToast('Review submitted successfully!', 'success'); // Replace Alert
@@ -162,9 +163,11 @@ export default function ReviewSubmission({
                   </TouchableOpacity>
                </View>
 
-               <ScrollView
-                  contentContainerStyle={styles.content}
-                  showsVerticalScrollIndicator={false}
+               <View
+                  style={{
+                     ...styles.content,
+                     justifyContent: 'flex-start',
+                  }}
                >
                   {/* Overall Rating */}
                   <View style={styles.section}>
@@ -225,10 +228,8 @@ export default function ReviewSubmission({
                      </Text>
                      {renderComfortRating('Ease of Use', 'ease')}
                      {renderComfortRating('Performance', 'performance')}
-                     {renderComfortRating('Noise Level', 'noise')}
-                     {renderComfortRating('Temperature', 'temperature')}
                   </View>
-               </ScrollView>
+               </View>
 
                {/* Submit Button */}
                <View

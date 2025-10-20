@@ -196,6 +196,7 @@ const styles = StyleSheet.create({
       width: '100%',
       marginBottom: 8,
       alignItems: 'center',
+      justifyContent: 'center',
    },
    toast: {
       flexDirection: 'row',
@@ -210,7 +211,7 @@ const styles = StyleSheet.create({
       // shadowOpacity: 0.3,
       shadowRadius: 8,
       elevation: 2,
-      maxWidth: SCREEN_WIDTH - 32,
+      maxWidth: SCREEN_WIDTH,
       minWidth: 180,
       alignSelf: 'center',
       // backgroundColor: theme.colors.bgPrimary,

@@ -26,10 +26,10 @@ export function AuthProvider({ children }) {
          ?.concat(':6600/api');
       API_URL =
          process.env.NODE_ENV !== 'production'
-            ? DEV_URL
-            : process.env.EXPO_PUBLIC_DEV_API_URL;
-      API_URL = 'http://' + API_URL;
+            ? `http://${DEV_URL}`
+            : process.env.EXPO_PUBLIC_API_URL + '/api';
       // console.log(Constants.expoGoConfig);
+      console.log(API_URL);
       console.log(API_URL);
       const loadToken = async () => {
          const token = await SecureStore.getItemAsync(

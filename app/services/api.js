@@ -9,7 +9,7 @@ const DEV_URL = Constants.expoGoConfig?.debuggerHost
 const API_URL =
    process.env.NODE_ENV !== 'production'
       ? 'http://' + DEV_URL
-      : process.env.EXPO_PUBLIC_API_URL;
+      : process.env.EXPO_PUBLIC_API_URL + '/api';
 
 export const api = axios.create({
    baseURL: API_URL,
