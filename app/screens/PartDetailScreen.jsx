@@ -16,10 +16,12 @@ import { getProduct, getReviews } from '../services/api';
 import { useNavigation } from '@react-navigation/native';
 import ReviewSubmission from '../components/ReviewSubmission';
 import SpecsModal from '../components/SpecsModal';
+import { useAuth } from '../context/AuthContext';
 
 export default function PartDetailScreen({ route }) {
    const { partId } = route.params;
    const { theme, isDark } = useTheme();
+   const { getUser } = useAuth();
    const { colors, gradients } = theme;
    const navigation = useNavigation();
 
@@ -29,10 +31,31 @@ export default function PartDetailScreen({ route }) {
    const [selectedSource, setSelectedSource] = useState(null);
    const [showReviewModal, setShowReviewModal] = useState(false);
    const [showSpecModal, setShowSpecModal] = useState(false);
+   const [showEditProduct, setShowEditProduct] = useState(false);
 
    useEffect(() => {
       fetchData();
+      // checkAdmin();
    }, [partId]);
+
+   useEffect(() => {
+      const unsubscribe = navigation.addListener('focus', () => {
+         navigation.setParams({ refreshData });
+      });
+      return unsubscribe;
+   }, [navigation, refreshData]);
+
+   const refreshData = (p) => {
+      setProduct(p);
+   };
+
+   const checkAdmin = async () => {
+      // getMe() to check if user is admin
+      const userResult = await getUser();
+      if (!userResult.error && userResult?.data?.user?.admin) {
+         setShowEditProduct(true);
+      }
+   };
 
    const fetchData = async () => {
       setLoading(true);
@@ -50,6 +73,7 @@ export default function PartDetailScreen({ route }) {
          if (inStockSources.length > 0) {
             setSelectedSource(inStockSources[0]);
          }
+         await checkAdmin();
       }
       if (!reviewsResult.error) setReviews(reviewsResult.reviews);
       setLoading(false);
@@ -119,7 +143,30 @@ export default function PartDetailScreen({ route }) {
                <Text style={[styles.headerTitle, { color: colors.primary }]}>
                   Part Details
                </Text>
-               <View style={{ width: 40 }} />
+               {showEditProduct ? (
+                  <TouchableOpacity
+                     style={[
+                        styles.backButton,
+                        {
+                           backgroundColor: colors.surface,
+                           borderColor: colors.surfaceBorder,
+                        },
+                     ]}
+                     onPress={() =>
+                        navigation.navigate('EditProduct', {
+                           product,
+                        })
+                     }
+                  >
+                     <MaterialIcons
+                        name="edit"
+                        size={24}
+                        color={colors.textPrimary}
+                     />
+                  </TouchableOpacity>
+               ) : (
+                  <View style={{ width: 40 }} /> // Placeholder for alignment
+               )}
             </View>
 
             <ScrollView

@@ -156,4 +156,30 @@ export const updateUser = async (updates) => {
    }
 };
 
+// app/services/api.js - Add this function
+
+export const createProduct = async (productData) => {
+   try {
+      const { data } = await api.post('/products', productData);
+      return data;
+   } catch (error) {
+      return {
+         error: true,
+         message: error.response?.data?.message || error.message,
+      };
+   }
+};
+
+export const updateProduct = async (id, productData) => {
+   try {
+      const { data } = await api.put(`/products/${id}`, productData);
+      return data;
+   } catch (error) {
+      return {
+         error: true,
+         message: error.response?.data?.message || error.message,
+      };
+   }
+};
+
 export default api;

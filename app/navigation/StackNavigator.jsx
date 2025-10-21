@@ -10,6 +10,8 @@ import RegisterScreen from '../screens/RegisterScreen';
 import { useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SavedBundleScreen from '../screens/SavedBundleScreen';
+import AddProductScreen from '../screens/AddProductScreen';
+import EditProductScreen from '../screens/EditProductScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -43,6 +45,8 @@ export default function StackNavigator() {
          <Stack.Screen name="Login" component={LoginScreen} />
          <Stack.Screen name="Register" component={RegisterScreen} />
          <Stack.Screen name="SavedBundle" component={SavedBundleScreen} />
+         <Stack.Screen name="AddProduct" component={AddProductScreen} />
+         <Stack.Screen name="EditProduct" component={EditProductScreen} />
       </Stack.Navigator>
    );
 }

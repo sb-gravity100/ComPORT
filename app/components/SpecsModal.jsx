@@ -13,7 +13,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { createReview } from '../services/api';
-import { camelToTitle } from '../utils/common';
+import { toTitleCaseWithAcronyms } from '../utils/common';
 
 export default function SpecsModal({ visible, onClose, product }) {
    const { theme } = useTheme();
@@ -62,7 +62,7 @@ export default function SpecsModal({ visible, onClose, product }) {
                                  { color: colors.textSecondary },
                               ]}
                            >
-                              {camelToTitle(key)}
+                              {toTitleCaseWithAcronyms(key)}
                            </Text>
                            <Text
                               style={[

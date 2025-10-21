@@ -15,12 +15,14 @@ import { useNavigation } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TextInput, Modal } from 'react-native';
 import { updateUser } from '../services/api';
+import { useToast } from '../context/ToastContext';
 
 export default function ProfileScreen() {
    const { theme, isDark } = useTheme();
    const { colors, gradients } = theme;
    const { onLogout, getUser } = useAuth();
    const navigation = useNavigation();
+   const { showToast } = useToast();
 
    const [user, setUser] = useState(null);
    const [loading, setLoading] = useState(true);
@@ -50,6 +52,7 @@ export default function ProfileScreen() {
       const updates = {};
       if (newUsername !== user.username) updates.username = newUsername;
       if (newPassword) updates.password = newPassword;
+      if (confirmPassword) updates.oldPassword = confirmPassword;
 
       const result = await updateUser(updates);
       setUpdating(false);
@@ -174,6 +177,49 @@ export default function ProfileScreen() {
                            />
                         </TouchableOpacity>
                      </View>
+                  </View>
+               )}
+
+               {user?.admin && (
+                  <View style={styles.section}>
+                     <Text
+                        style={[styles.sectionTitle, { color: colors.warning }]}
+                     >
+                        Admin Tools
+                     </Text>
+                     <TouchableOpacity
+                        style={[
+                           styles.card,
+                           {
+                              backgroundColor: colors.surface,
+                              borderWidth: 1,
+                              borderColor: colors.primary,
+                           },
+                        ]}
+                        onPress={() => navigation.navigate('AddProduct')}
+                     >
+                        <View
+                           style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 12,
+                           }}
+                        >
+                           <MaterialIcons
+                              name="add-box"
+                              size={24}
+                              color={colors.primary}
+                           />
+                           <Text
+                              style={[
+                                 styles.cardTitle,
+                                 { color: colors.primary },
+                              ]}
+                           >
+                              Add New Product
+                           </Text>
+                        </View>
+                     </TouchableOpacity>
                   </View>
                )}
 
