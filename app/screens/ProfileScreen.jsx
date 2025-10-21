@@ -27,7 +27,7 @@ export default function ProfileScreen() {
          const result = await getUser();
          setUser(result.data?.user);
          setLoading(false);
-         console.log(result.data?.user?.reviews);
+         console.log(result.data);
       };
       fetchUser();
    }, []);
@@ -115,7 +115,7 @@ export default function ProfileScreen() {
                   )}
                </View>
 
-               <View style={styles.section}>
+               {/* <View style={styles.section}>
                   <Text
                      style={[styles.sectionTitle, { color: colors.textMuted }]}
                   >
@@ -135,7 +135,7 @@ export default function ProfileScreen() {
                         </Text>
                      </View>
                   )}
-               </View>
+               </View> */}
 
                <TouchableOpacity
                   style={[

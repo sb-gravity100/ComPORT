@@ -76,29 +76,8 @@ export const getBundle = async (id) => {
 
 export const createBundle = async (bundleData) => {
    try {
-      // Transform bundleData.parts to products array
-      const products = Object.entries(bundleData.parts).map(
-         ([category, part]) => ({
-            product: part._id,
-            category,
-         })
-      );
-
-      // Extract sources with proper structure
-      const sources = {};
-      Object.entries(bundleData.sources || {}).forEach(([category, source]) => {
-         sources[category] = {
-            shopName: source.shopName,
-            price: source.price,
-            productUrl: source.productUrl,
-            shipping: source.shipping || { available: false, cost: 0 },
-         };
-      });
-
       const payload = {
-         name: bundleData.name,
-         products,
-         sources,
+         ...bundleData,
          notes: bundleData.notes || '',
          compatibilityScore: bundleData.compatibilityScore || 0,
          comfortProfile: bundleData.comfortProfile || {},

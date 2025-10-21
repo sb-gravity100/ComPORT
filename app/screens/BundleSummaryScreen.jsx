@@ -14,18 +14,28 @@ import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { createBundle } from '../services/api';
 import PartRow from '../components/PartRow';
+import { getBundleComfortRating } from '../services/api';
+import { ActivityIndicator } from 'react-native-paper';
+import { useToast } from '../context/ToastContext';
 
 export default function BundleSummaryScreen({ route }) {
    const { bundleData } = route.params || {};
    const { theme, isDark } = useTheme();
    const { colors, gradients } = theme;
    const navigation = useNavigation();
+   const { showToast } = useToast();
 
    const [saving, setSaving] = useState(false);
    const [calculating, setCalculating] = useState(false);
+   const [comfortProfile, setComfortProfile] = useState({
+      overall: 0,
+      ease: 0,
+      performance: 0,
+   });
 
    useEffect(() => {
       calculateComfortProfile();
+      console.log(bundleData.parts);
    }, [bundleData.parts]);
 
    const calculateComfortProfile = async () => {
@@ -36,8 +46,36 @@ export default function BundleSummaryScreen({ route }) {
       setCalculating(true);
 
       try {
+         // Create parts object with product IDs
+         const partsForML = {};
+         Object.entries(bundleData.parts).forEach(([category, part]) => {
+            partsForML[category] = part._id;
+         });
+
+         const result = await getBundleComfortRating(partsForML);
+
+         if (!result.error && result.comfortRating) {
+            setComfortProfile({
+               overall: Math.round(result.comfortRating.overall || 0),
+               ease: Math.round(result.comfortRating.ease || 0),
+               performance: Math.round(result.comfortRating.performance || 0),
+            });
+         } else {
+            console.error('Comfort calculation failed:', result.message);
+            // Set default values on error
+            setComfortProfile({
+               overall: 0,
+               ease: 0,
+               performance: 0,
+            });
+         }
       } catch (error) {
          console.error('Comfort calculation error:', error);
+         setComfortProfile({
+            overall: 0,
+            ease: 0,
+            performance: 0,
+         });
       } finally {
          setCalculating(false);
       }
@@ -46,35 +84,23 @@ export default function BundleSummaryScreen({ route }) {
    const handleSave = async () => {
       setSaving(true);
 
-      const products = Object.entries(bundleData.parts).map(
-         ([category, part]) => ({
-            product: part._id,
-            category,
-         })
-      );
-
       const result = await createBundle({
-         name: bundleData.name,
-         products,
+         ...bundleData,
          notes: '',
+         comfortProfile, // Add this line
       });
 
       setSaving(false);
 
       if (result.error) {
-         Alert.alert('Error', result.message);
+         showToast(result.message || 'Unknown error', 'error');
+         console.log(result.message);
       } else {
-         Alert.alert('Success', 'Bundle saved successfully!', [
-            {
-               text: 'OK',
-               onPress: () => {
-                  navigation.reset({
-                     index: 0,
-                     routes: [{ name: 'Main' }],
-                  });
-               },
-            },
-         ]);
+         showToast('Bundle saved successfully!', 'success');
+         navigation.reset({
+            index: 0,
+            routes: [{ name: 'Main' }],
+         });
       }
    };
 
@@ -245,7 +271,14 @@ export default function BundleSummaryScreen({ route }) {
                   </View>
 
                   <View style={styles.comfortMetrics}>
-                     {[].map(({ key, label, icon }) => (
+                     {[
+                        { key: 'ease', label: 'Ease of Use', icon: 'grade' },
+                        {
+                           key: 'performance',
+                           label: 'Performance',
+                           icon: 'speed',
+                        },
+                     ].map(({ key, label, icon }) => (
                         <View key={key} style={styles.metricRow}>
                            <View style={styles.metricLabelRow}>
                               <MaterialIcons
@@ -279,7 +312,7 @@ export default function BundleSummaryScreen({ route }) {
                                        styles.metricFill,
                                        {
                                           backgroundColor: colors.primary,
-                                          width: `50%`,
+                                          width: `${comfortProfile[key]}%`,
                                        },
                                     ]}
                                  />
@@ -290,7 +323,7 @@ export default function BundleSummaryScreen({ route }) {
                                     { color: colors.primary },
                                  ]}
                               >
-                                 {/* {comfortProfile[key]} */}
+                                 {comfortProfile[key]}
                               </Text>
                            </View>
                         </View>
@@ -300,9 +333,25 @@ export default function BundleSummaryScreen({ route }) {
                   <View style={styles.overallScore}>
                      <View style={styles.overallLeft}>
                         <MaterialIcons
-                           name={'sentiment-very-satisfied'}
+                           name={
+                              comfortProfile.overall >= 80
+                                 ? 'sentiment-very-satisfied'
+                                 : comfortProfile.overall >= 60
+                                 ? 'sentiment-satisfied'
+                                 : comfortProfile.overall >= 40
+                                 ? 'sentiment-neutral'
+                                 : 'sentiment-dissatisfied'
+                           }
                            size={32}
-                           color={colors.success}
+                           color={
+                              comfortProfile.overall >= 80
+                                 ? colors.success
+                                 : comfortProfile.overall >= 60
+                                 ? colors.primary
+                                 : comfortProfile.overall >= 40
+                                 ? colors.warning
+                                 : colors.error
+                           }
                         />
                         <View>
                            <Text
@@ -319,14 +368,22 @@ export default function BundleSummaryScreen({ route }) {
                                  { color: colors.textMuted },
                               ]}
                            >
-                              {'Excellent'}
+                              {comfortProfile.overall >= 80
+                                 ? 'Excellent'
+                                 : comfortProfile.overall >= 60
+                                 ? 'Good'
+                                 : comfortProfile.overall >= 40
+                                 ? 'Fair'
+                                 : comfortProfile.overall > 0
+                                 ? 'Needs Improvement'
+                                 : 'Calculating...'}
                            </Text>
                         </View>
                      </View>
                      <Text
                         style={[styles.overallValue, { color: colors.primary }]}
                      >
-                        100/100
+                        {comfortProfile.overall}/100
                      </Text>
                   </View>
                </View>

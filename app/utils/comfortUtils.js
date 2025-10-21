@@ -47,8 +47,6 @@ function checkRAMMotherboardCompatibility(ram, motherboard) {
    const mbMemoryType =
       motherboard.specifications?.memoryType?.toLowerCase() || '';
 
-   console.log(ramType, mbMemoryType);
-
    if (ramType !== mbMemoryType) {
       issues.push(
          `Memory type mismatch: RAM (${ramType.toUpperCase()}) vs Motherboard (${mbMemoryType.toUpperCase()})`
@@ -149,8 +147,6 @@ function checkMotherBCaseCompatibility(board, pcCase) {
       );
    }
 
-   console.log(issues);
-
    return {
       compatible: issues.length === 0,
       issues,
@@ -221,7 +217,6 @@ export function checkCompatibility(parts) {
    ).length;
    report.score =
       totalChecks > 0 ? Math.round((passedChecks / totalChecks) * 100) : 100;
-   console.log(report);
 
    return report;
 }

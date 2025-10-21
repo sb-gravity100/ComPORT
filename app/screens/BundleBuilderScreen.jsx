@@ -109,10 +109,12 @@ export default function BundleBuilderScreen() {
          ...prev,
          [currentCategory.id]: {
             ...product,
-            selectedPrice: selectedSource.price,
-            selectedShop: selectedSource.shopName,
-            selectedSourceUrl: selectedSource.productUrl,
-            selectedShipping: selectedSource.shipping,
+            selectedSource: {
+               shopName: selectedSource.shopName,
+               productUrl: selectedSource.productUrl || '',
+               price: selectedSource.price,
+               shipping: selectedSource.shipping,
+            },
          },
       }));
 
