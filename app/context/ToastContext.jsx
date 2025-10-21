@@ -52,6 +52,8 @@ const styles = StyleSheet.create({
       position: 'absolute',
       top: 20,
       right: 0,
+      left: 0,
+      alignItems: 'center',
       zIndex: 9999,
       opacity: 1,
    },

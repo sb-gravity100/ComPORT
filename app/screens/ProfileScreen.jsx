@@ -12,6 +12,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
+import { TextInput, Modal } from 'react-native';
+import { updateUser } from '../services/api';
 
 export default function ProfileScreen() {
    const { theme, isDark } = useTheme();
@@ -21,16 +24,48 @@ export default function ProfileScreen() {
 
    const [user, setUser] = useState(null);
    const [loading, setLoading] = useState(true);
+   const [editMode, setEditMode] = useState(false);
+   const [newUsername, setNewUsername] = useState('');
+   const [newPassword, setNewPassword] = useState('');
+   const [confirmPassword, setConfirmPassword] = useState('');
+   const [updating, setUpdating] = useState(false);
 
    useEffect(() => {
       const fetchUser = async () => {
          const result = await getUser();
          setUser(result.data?.user);
+         setNewUsername(result.data?.user?.username || '');
          setLoading(false);
-         console.log(result.data);
       };
       fetchUser();
    }, []);
+
+   const handleUpdateUser = async () => {
+      if (newPassword && newPassword !== confirmPassword) {
+         showToast('Passwords do not match', 'error');
+         return;
+      }
+
+      setUpdating(true);
+      const updates = {};
+      if (newUsername !== user.username) updates.username = newUsername;
+      if (newPassword) updates.password = newPassword;
+
+      const result = await updateUser(updates);
+      setUpdating(false);
+
+      if (!result.error) {
+         showToast('Profile updated successfully', 'success');
+         setEditMode(false);
+         setNewPassword('');
+         setConfirmPassword('');
+         // Refresh user data
+         const refreshResult = await getUser();
+         setUser(refreshResult.data?.user);
+      } else {
+         showToast(result.message || 'Update failed', 'error');
+      }
+   };
 
    const handleLogout = async () => {
       await onLogout();
@@ -44,29 +79,60 @@ export default function ProfileScreen() {
       <TouchableOpacity
          key={bundle._id}
          style={[styles.card, { backgroundColor: colors.surface }]}
-         onPress={() => navigation.push('BundleDetails', { id: bundle._id })}
+         onPress={() =>
+            navigation.push('SavedBundle', { bundleId: bundle._id })
+         }
       >
-         <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-            {bundle.name}
-         </Text>
-         <Text style={{ color: colors.textSecondary }}>
-            ₱{bundle.totalPrice.toLocaleString()}
-         </Text>
+         <View style={styles.bundleCardHeader}>
+            <View style={{ flex: 1 }}>
+               <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
+                  {bundle.name}
+               </Text>
+               <Text
+                  style={{
+                     color: colors.textSecondary,
+                     fontSize: 12,
+                     marginTop: 4,
+                  }}
+               >
+                  {bundle.products?.length || 0} parts
+               </Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+               <Text
+                  style={{
+                     color: colors.primary,
+                     fontSize: 18,
+                     fontWeight: '700',
+                  }}
+               >
+                  ₱{bundle.totalPrice?.toLocaleString()}
+               </Text>
+               {bundle.comfortProfile?.overall && (
+                  <Text
+                     style={{
+                        color: colors.textMuted,
+                        fontSize: 11,
+                        marginTop: 4,
+                     }}
+                  >
+                     Comfort: {bundle.comfortProfile.overall}
+                  </Text>
+               )}
+            </View>
+         </View>
+         <MaterialIcons
+            name="chevron-right"
+            size={24}
+            color={colors.textMuted}
+            style={{
+               position: 'absolute',
+               right: 16,
+               top: '50%',
+               marginTop: -12,
+            }}
+         />
       </TouchableOpacity>
-   );
-
-   const renderReview = (review) => (
-      <View
-         key={review._id}
-         style={[styles.card, { backgroundColor: colors.surface }]}
-      >
-         <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-            {review.title || 'Untitled Review'}
-         </Text>
-         <Text style={{ color: colors.textSecondary }}>
-            Rating: {review.rating} / 5
-         </Text>
-      </View>
    );
 
    return (
@@ -78,18 +144,36 @@ export default function ProfileScreen() {
                   My Profile
                </Text>
 
-               {loading ? (
-                  <ActivityIndicator size="large" color={colors.primary} />
-               ) : (
+               {!loading && (
                   <View style={styles.userInfo}>
-                     <Text
-                        style={[styles.username, { color: colors.textPrimary }]}
-                     >
-                        @{user?.username}
-                     </Text>
-                     <Text style={{ color: colors.textSecondary }}>
-                        {user?.email}
-                     </Text>
+                     <View style={styles.userHeader}>
+                        <View style={{ flex: 1 }}>
+                           <Text
+                              style={[
+                                 styles.username,
+                                 { color: colors.textPrimary },
+                              ]}
+                           >
+                              @{user?.username}
+                           </Text>
+                           <Text style={{ color: colors.textSecondary }}>
+                              {user?.email}
+                           </Text>
+                        </View>
+                        <TouchableOpacity
+                           style={[
+                              styles.editButton,
+                              { backgroundColor: colors.primary },
+                           ]}
+                           onPress={() => setEditMode(true)}
+                        >
+                           <MaterialIcons
+                              name="edit"
+                              size={20}
+                              color={colors.textDark}
+                           />
+                        </TouchableOpacity>
+                     </View>
                   </View>
                )}
 
@@ -149,6 +233,144 @@ export default function ProfileScreen() {
                   </Text>
                </TouchableOpacity>
             </ScrollView>
+            <Modal
+               visible={editMode}
+               animationType="slide"
+               transparent={true}
+               onRequestClose={() => setEditMode(false)}
+            >
+               <View style={styles.modalOverlay}>
+                  <View
+                     style={[
+                        styles.modalContent,
+                        { backgroundColor: colors.bgPrimary },
+                     ]}
+                  >
+                     <View style={styles.modalHeader}>
+                        <Text
+                           style={[
+                              styles.modalTitle,
+                              { color: colors.textPrimary },
+                           ]}
+                        >
+                           Edit Profile
+                        </Text>
+                        <TouchableOpacity
+                           onPress={() => setEditMode(false)}
+                           style={[
+                              styles.closeButton,
+                              { backgroundColor: colors.surface },
+                           ]}
+                        >
+                           <MaterialIcons
+                              name="close"
+                              size={24}
+                              color={colors.textPrimary}
+                           />
+                        </TouchableOpacity>
+                     </View>
+
+                     <View style={styles.modalBody}>
+                        <View style={styles.inputGroup}>
+                           <Text
+                              style={[
+                                 styles.inputLabel,
+                                 { color: colors.textSecondary },
+                              ]}
+                           >
+                              Username
+                           </Text>
+                           <TextInput
+                              style={[
+                                 styles.input,
+                                 {
+                                    backgroundColor: colors.surface,
+                                    color: colors.textPrimary,
+                                    borderColor: colors.surfaceBorder,
+                                 },
+                              ]}
+                              value={newUsername}
+                              onChangeText={setNewUsername}
+                              placeholder="Enter username"
+                              placeholderTextColor={colors.textMuted}
+                           />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                           <Text
+                              style={[
+                                 styles.inputLabel,
+                                 { color: colors.textSecondary },
+                              ]}
+                           >
+                              New Password (optional)
+                           </Text>
+                           <TextInput
+                              style={[
+                                 styles.input,
+                                 {
+                                    backgroundColor: colors.surface,
+                                    color: colors.textPrimary,
+                                    borderColor: colors.surfaceBorder,
+                                 },
+                              ]}
+                              value={newPassword}
+                              onChangeText={setNewPassword}
+                              placeholder="Leave blank to keep current"
+                              placeholderTextColor={colors.textMuted}
+                              secureTextEntry
+                           />
+                        </View>
+
+                        {newPassword && (
+                           <View style={styles.inputGroup}>
+                              <Text
+                                 style={[
+                                    styles.inputLabel,
+                                    { color: colors.textSecondary },
+                                 ]}
+                              >
+                                 Confirm Password
+                              </Text>
+                              <TextInput
+                                 style={[
+                                    styles.input,
+                                    {
+                                       backgroundColor: colors.surface,
+                                       color: colors.textPrimary,
+                                       borderColor: colors.surfaceBorder,
+                                    },
+                                 ]}
+                                 value={confirmPassword}
+                                 onChangeText={setConfirmPassword}
+                                 placeholder="Confirm new password"
+                                 placeholderTextColor={colors.textMuted}
+                                 secureTextEntry
+                              />
+                           </View>
+                        )}
+
+                        <TouchableOpacity
+                           style={[
+                              styles.updateButton,
+                              { backgroundColor: colors.primary },
+                           ]}
+                           onPress={handleUpdateUser}
+                           disabled={updating}
+                        >
+                           <Text
+                              style={[
+                                 styles.updateButtonText,
+                                 { color: colors.textDark },
+                              ]}
+                           >
+                              {updating ? 'Updating...' : 'Update Profile'}
+                           </Text>
+                        </TouchableOpacity>
+                     </View>
+                  </View>
+               </View>
+            </Modal>
          </LinearGradient>
       </>
    );
@@ -211,6 +433,81 @@ const styles = StyleSheet.create({
    },
    logoutText: {
       fontSize: 18,
+      fontWeight: '700',
+   },
+   // Add these to the existing StyleSheet.create
+   userHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+   },
+   editButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+   },
+   bundleCardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingRight: 30,
+   },
+   modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'flex-end',
+   },
+   modalContent: {
+      height: '70%',
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+   },
+   modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: 'rgba(255,255,255,0.1)',
+   },
+   modalTitle: {
+      fontSize: 22,
+      fontWeight: '800',
+   },
+   closeButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+   },
+   modalBody: {
+      padding: 16,
+   },
+   inputGroup: {
+      marginBottom: 16,
+   },
+   inputLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      marginBottom: 8,
+   },
+   input: {
+      height: 48,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      borderWidth: 1,
+      fontSize: 15,
+   },
+   updateButton: {
+      borderRadius: 12,
+      paddingVertical: 16,
+      alignItems: 'center',
+      marginTop: 24,
+   },
+   updateButtonText: {
+      fontSize: 16,
       fontWeight: '700',
    },
 });

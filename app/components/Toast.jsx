@@ -125,7 +125,6 @@ export default function ToastItem({
             {
                opacity,
                transform: [{ translateY }],
-               backgroundColor: theme.colors.bgSecondary,
             },
          ]}
       >
@@ -137,6 +136,7 @@ export default function ToastItem({
                {
                   backgroundColor: config.bg,
                   borderLeftColor: config.color,
+                  backgroundColor: theme.colors.bgSecondary,
                },
             ]}
          >
@@ -217,8 +217,8 @@ const styles = StyleSheet.create({
       // backgroundColor: theme.colors.bgPrimary,
    },
    iconContainer: {
-      width: 32,
-      height: 32,
+      width: 20,
+      height: 20,
       borderRadius: 16,
       justifyContent: 'center',
       alignItems: 'center',

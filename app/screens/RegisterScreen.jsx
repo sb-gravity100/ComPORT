@@ -99,7 +99,7 @@ export default function RegisterScreen() {
             newErrors.username = result?.errors.username;
          }
       } else {
-         Alert.alert('Success', 'Account created successfully!');
+         showToast('Registration successful! Please log in.', 'success');
          navigation.reset({
             index: 0,
             routes: [

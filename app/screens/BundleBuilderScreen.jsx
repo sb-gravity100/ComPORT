@@ -28,16 +28,16 @@ import { checkCompatibility } from '../utils/comfortUtils';
 
 const CATEGORIES = [
    { id: 'CPU', name: 'Processor', icon: 'memory', required: true },
-   { id: 'GPU', name: 'Graphics Card', icon: 'videocam', required: false },
-   { id: 'RAM', name: 'Memory', icon: 'storage', required: true },
    {
       id: 'Motherboard',
       name: 'Motherboard',
       icon: 'dashboard',
       required: true,
    },
+   { id: 'RAM', name: 'Memory', icon: 'storage', required: true },
    { id: 'Storage', name: 'Storage', icon: 'sd-storage', required: true },
    { id: 'PSU', name: 'Power Supply', icon: 'power', required: true },
+   { id: 'GPU', name: 'Graphics Card', icon: 'videocam', required: false },
    { id: 'Case', name: 'Case', icon: 'ad-units', required: false },
 ];
 
@@ -140,13 +140,16 @@ export default function BundleBuilderScreen() {
    };
 
    const handleSaveBundle = () => {
-      if (!bundleName.trim()) {
-         showToast('Missing bundle name!', 'error');
-         return;
-      }
       if (missingRequired.length > 0) {
          showToast('Missing requirements!', 'error');
-
+         return;
+      }
+      if (compatibilityIssues.length > 0) {
+         showToast('Please resolve compatibility issues first!', 'error');
+         return;
+      }
+      if (!bundleName.trim()) {
+         showToast('Missing bundle name!', 'error');
          return;
       }
 

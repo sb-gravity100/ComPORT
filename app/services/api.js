@@ -147,4 +147,13 @@ export const getMLStatus = async () => {
    }
 };
 
+export const updateUser = async (updates) => {
+   try {
+      const { data } = await api.put('/auth/me', updates);
+      return data;
+   } catch (error) {
+      return { error: true, message: error.response?.data?.message };
+   }
+};
+
 export default api;
