@@ -9,7 +9,7 @@ let API_URL = process.env.EXPO_PUBLIC_API_URL;
 //       .shift()
 //       ?.concat(':6600/api');
 // }
-console.log(API_URL);
+// console.log(API_URL);
 
 export const api = axios.create({
    baseURL: API_URL,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
    View,
    Text,
@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import ReviewSubmission from '../components/ReviewSubmission';
 import SpecsModal from '../components/SpecsModal';
 import { useAuth } from '../context/AuthContext';
+import { useFocusEffect } from 'expo-router';
 
 export default function PartDetailScreen({ route }) {
    const { partId } = route.params;
@@ -32,22 +33,41 @@ export default function PartDetailScreen({ route }) {
    const [showReviewModal, setShowReviewModal] = useState(false);
    const [showSpecModal, setShowSpecModal] = useState(false);
    const [showEditProduct, setShowEditProduct] = useState(false);
+   const isFocused = navigation.isFocused();
 
    useEffect(() => {
       fetchData();
-      // checkAdmin();
    }, [partId]);
 
-   useEffect(() => {
-      const unsubscribe = navigation.addListener('focus', () => {
-         navigation.setParams({ refreshData });
-      });
-      return unsubscribe;
-   }, [navigation, refreshData]);
+   useFocusEffect(
+      useCallback(() => {
+         // This runs every time the screen comes into focus
+         refreshData(); // or setState, fetch API, etc.
 
-   const refreshData = (p) => {
-      setProduct(p);
-      fetchData();
+         return () => {
+            // Optional cleanup when screen loses focus
+         };
+      }, [])
+   );
+
+   const refreshData = async () => {
+      const [productResult, reviewsResult] = await Promise.all([
+         getProduct(partId),
+         getReviews(partId),
+      ]);
+
+      if (!productResult.error) {
+         setProduct(productResult.product);
+         // Auto-select cheapest in-stock source
+         const inStockSources = productResult.product.sources.filter(
+            (s) => s.inStock
+         );
+         if (inStockSources.length > 0) {
+            setSelectedSource(inStockSources[0]);
+         }
+         await checkAdmin();
+      }
+      if (!reviewsResult.error) setReviews(reviewsResult.reviews);
    };
 
    const checkAdmin = async () => {
@@ -153,11 +173,11 @@ export default function PartDetailScreen({ route }) {
                            borderColor: colors.surfaceBorder,
                         },
                      ]}
-                     onPress={() =>
+                     onPress={() => {
                         navigation.navigate('EditProduct', {
                            product,
-                        })
-                     }
+                        });
+                     }}
                   >
                      <MaterialIcons
                         name="edit"
@@ -196,6 +216,7 @@ export default function PartDetailScreen({ route }) {
                   </View>
 
                   <Text
+                     key={product.name}
                      style={[styles.productName, { color: colors.textPrimary }]}
                   >
                      {product.name}
@@ -205,6 +226,7 @@ export default function PartDetailScreen({ route }) {
                         styles.brandModel,
                         { color: colors.textSecondary },
                      ]}
+                     key={product.brand}
                   >
                      {product.brand} • {product.model}
                   </Text>
@@ -219,7 +241,10 @@ export default function PartDetailScreen({ route }) {
                         >
                            Price Range
                         </Text>
-                        <Text style={[styles.price, { color: colors.primary }]}>
+                        <Text
+                           key={product.priceRange.min}
+                           style={[styles.price, { color: colors.primary }]}
+                        >
                            ₱{product.priceRange.min.toLocaleString()} - ₱
                            {product.priceRange.max.toLocaleString()}
                         </Text>
@@ -352,7 +377,7 @@ export default function PartDetailScreen({ route }) {
                            styles.viewButton,
                            { backgroundColor: colors.success },
                         ]}
-                        onPress={() => Linking.openURL(bestDeal.productUrl)}
+                        // onPress={() => Linking.openURL(bestDeal.productUrl)}
                      >
                         <Text
                            style={[

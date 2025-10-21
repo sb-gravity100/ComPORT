@@ -33,7 +33,7 @@ export default function EditProductScreen() {
    const route = useRoute();
    const { showToast } = useToast();
 
-   const { product, refreshData } = route.params;
+   const { product } = route.params;
 
    const [formData, setFormData] = useState({
       name: product.name || '',
@@ -41,6 +41,7 @@ export default function EditProductScreen() {
       brand: product.brand || '',
       model: product.model || '',
       shopName: '',
+      shopUrl: '',
       price: '',
       productUrl: '',
       inStock: true,
@@ -59,6 +60,7 @@ export default function EditProductScreen() {
       const _sources = [
          {
             shopName: formData.shopName,
+            shopUrl: formData.shopUrl,
             price: parseFloat(formData.price) || null,
             productUrl: formData.productUrl,
             inStock: formData.inStock,
@@ -89,7 +91,7 @@ export default function EditProductScreen() {
       }
 
       setLoading(true);
-      console.log(product._id);
+      // console.log(product._id);
 
       const updatedProduct = {
          ...product,
@@ -110,10 +112,9 @@ export default function EditProductScreen() {
 
       if (result.error) {
          showToast(result.message, 'error');
-         console.log(result);
+         // console.log(result);
       } else {
          showToast('Product updated successfully!', 'success');
-         if (refreshData) refreshData(result.product);
          navigation.goBack();
       }
    };
@@ -248,6 +249,25 @@ export default function EditProductScreen() {
                      value={formData.shopName}
                      onChangeText={(text) =>
                         setFormData({ ...formData, shopName: text })
+                     }
+                     placeholder="e.g., PCHub"
+                     placeholderTextColor={colors.textMuted}
+                  />
+
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>
+                     Shop Url *
+                  </Text>
+                  <TextInput
+                     style={[
+                        styles.input,
+                        {
+                           backgroundColor: colors.bgTertiary,
+                           color: colors.textPrimary,
+                        },
+                     ]}
+                     value={formData.shopUrl}
+                     onChangeText={(text) =>
+                        setFormData({ ...formData, shopUrl: text })
                      }
                      placeholder="e.g., PCHub"
                      placeholderTextColor={colors.textMuted}

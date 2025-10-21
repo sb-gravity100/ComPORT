@@ -43,17 +43,17 @@ export default function ProfileScreen() {
    }, []);
 
    const handleUpdateUser = async () => {
-      if (newPassword && newPassword !== confirmPassword) {
-         showToast('Passwords do not match', 'error');
+      if (newPassword && newPassword === confirmPassword) {
+         showToast('New password must be different!', 'error');
          return;
       }
 
       setUpdating(true);
       const updates = {};
-      if (newUsername !== user.username) updates.username = newUsername;
-      if (newPassword) updates.password = newPassword;
-      if (confirmPassword) updates.oldPassword = confirmPassword;
-
+      if (newUsername !== user.username) updates.username = newUsername.trim();
+      if (newPassword) updates.password = newPassword.trim();
+      if (confirmPassword) updates.oldPassword = confirmPassword.trim();
+      console.log(updates);
       const result = await updateUser(updates);
       setUpdating(false);
 
