@@ -47,6 +47,7 @@ export default function PartDetailScreen({ route }) {
 
    const refreshData = (p) => {
       setProduct(p);
+      fetchData();
    };
 
    const checkAdmin = async () => {
@@ -414,7 +415,7 @@ export default function PartDetailScreen({ route }) {
                                  borderWidth: isBestDeal ? 2 : 0,
                               },
                            ]}
-                           onPress={() => Linking.openURL(source.productUrl)}
+                           // onPress={() => Linking.openURL(source.productUrl)}
                         >
                            <View style={styles.sourceHeader}>
                               <View style={styles.sourceInfo}>

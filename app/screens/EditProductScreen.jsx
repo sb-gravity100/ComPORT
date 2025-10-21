@@ -56,18 +56,40 @@ export default function EditProductScreen() {
    const [loading, setLoading] = useState(false);
 
    const handleUpdate = async () => {
-      if (
-         !formData.name ||
-         !formData.brand ||
-         !formData.model ||
-         !formData.shopName ||
-         !formData.price
-      ) {
+      const _sources = [
+         {
+            shopName: formData.shopName,
+            price: parseFloat(formData.price) || null,
+            productUrl: formData.productUrl,
+            inStock: formData.inStock,
+         },
+      ];
+      const _bySource = [
+         {
+            shopName: formData.shopName,
+            average: parseFloat(formData.rating) || null,
+            count: parseInt(formData.ratingCount) || 0,
+         },
+      ];
+
+      // remove sources with empty shopName
+      const sources = _sources.filter((source) => source.shopName?.length > 0);
+      const bySource = _bySource.filter(
+         (source) => source.shopName?.length > 0
+      );
+
+      if (!formData.name || !formData.brand || !formData.model) {
          showToast('Please fill all required fields', 'error');
          return;
       }
 
+      if (sources[0]?.shopName && !sources[0]?.price) {
+         showToast('Please provide a price.', 'error');
+         return;
+      }
+
       setLoading(true);
+      console.log(product._id);
 
       const updatedProduct = {
          ...product,
@@ -75,37 +97,20 @@ export default function EditProductScreen() {
          category: formData.category,
          brand: formData.brand,
          model: formData.model,
-         sources: [
-            {
-               shopName: formData.shopName,
-               shopUrl: `https://${formData.shopName.toLowerCase()}.com`,
-               productUrl: formData.productUrl || '',
-               price: parseFloat(formData.price),
-               inStock: formData.inStock,
-               shipping: {
-                  available: true,
-                  cost: 0,
-               },
-            },
-         ],
+         sources,
          ratings: {
-            bySource: [
-               {
-                  shopName: formData.shopName,
-                  average: parseFloat(formData.rating) || null,
-                  count: parseInt(formData.ratingCount) || 0,
-               },
-            ],
+            bySource,
          },
          specifications,
          descriptions,
       };
 
-      const result = await updateProduct(updatedProduct);
+      const result = await updateProduct(product._id, updatedProduct);
       setLoading(false);
 
       if (result.error) {
          showToast(result.message, 'error');
+         console.log(result);
       } else {
          showToast('Product updated successfully!', 'success');
          if (refreshData) refreshData(result.product);
