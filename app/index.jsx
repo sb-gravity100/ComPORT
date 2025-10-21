@@ -21,13 +21,13 @@ if (process.env.NODE_ENV !== 'production') {
       ?.concat(':6600/api');
 }
 
-fetch(
-   Constants.expoGoConfig?.debuggerHost?.split(':').shift()?.concat(':6600')
-).then((res) => {
-   res.json().then((data) => {
-      console.log('API STATUS:', data.status);
-   });
-});
+// fetch(
+//    Constants.expoGoConfig?.debuggerHost?.split(':').shift()?.concat(':6600')
+// ).then((res) => {
+//    res.json().then((data) => {
+//       console.log('API STATUS:', data.status);
+//    });
+// });
 
 export default function App() {
    const [preloaded, setPreloaded] = useState(false);

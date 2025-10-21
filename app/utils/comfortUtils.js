@@ -51,7 +51,7 @@ function checkRAMMotherboardCompatibility(ram, motherboard) {
 
    if (ramType !== mbMemoryType) {
       issues.push(
-         `Memory type mismatch: RAM (${ramGen}) vs Motherboard (${mbGen})`
+         `Memory type mismatch: RAM (${ramType.toUpperCase()}) vs Motherboard (${mbMemoryType.toUpperCase()})`
       );
    }
 

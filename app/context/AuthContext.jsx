@@ -56,7 +56,7 @@ export function AuthProvider({ children }) {
             password,
          });
       } catch (e) {
-         console.log({ ...e });
+         // console.log({ ...e });
          return {
             error: true,
             message: e.response?.data?.message,
