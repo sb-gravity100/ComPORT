@@ -81,6 +81,7 @@ export default function RegisterScreen() {
       if (password.trim().length < 6) {
          newErrors.password = 'Password must be at least 6 characters';
       }
+      console.log(newErrors);
 
       setErrors(newErrors);
 

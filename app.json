@@ -1,5 +1,8 @@
 {
    "expo": {
+      "install": {
+         "exclude": ["@react-native/dev-middleware"]
+      },
       "scheme": "comport",
       "name": "ComPORT",
       "slug": "ComPORT",

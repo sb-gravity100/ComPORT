@@ -190,17 +190,8 @@ export default function BundleBuilderScreen() {
          checkBundleCompatibility();
       } else {
          setCompatibilityReport(null);
-      }
-      setIsCompatible(true);
-      setCompatibilityIssues([]);
-      for (let i in compatibilityReport?.checks) {
-         // console.log(i);
-         if (!compatibilityReport?.checks[i]?.compatible) {
-            setIsCompatible(false);
-            i.issues?.forEach((e) => setCompatibilityIssues((i) => [...i, e]));
-            // console.log(i);
-            // console.log(compatibilityIssues);
-         }
+         setIsCompatible(true);
+         setCompatibilityIssues([]);
       }
    }, [selectedParts]);
 
@@ -211,6 +202,19 @@ export default function BundleBuilderScreen() {
       const report = checkCompatibility(selectedParts);
       setCompatibilityReport(report);
 
+      // Set compatibility status
+      setIsCompatible(report.compatible);
+
+      // Collect all issues from the report
+      const allIssues = [];
+      if (report.issues && report.issues.length > 0) {
+         allIssues.push(...report.issues);
+      }
+      if (report.warnings && report.warnings.length > 0) {
+         allIssues.push(...report.warnings);
+      }
+
+      setCompatibilityIssues(allIssues);
       setCheckingCompatibility(false);
    };
 
@@ -281,15 +285,40 @@ export default function BundleBuilderScreen() {
                      styles.compatibilityCard,
                      {
                         backgroundColor: colors.surface,
-                        borderColor: colors.surfaceBorder,
+                        borderColor:
+                           compatibilityReport?.compatible === false
+                              ? colors.error
+                              : compatibilityReport?.warnings?.length > 0
+                              ? colors.warning
+                              : colors.surfaceBorder,
                      },
                   ]}
                >
                   <View style={styles.compatibilityHeader}>
                      <MaterialIcons
-                        name="check-circle"
+                        name={
+                           Object.keys(selectedParts).length === 0
+                              ? 'info'
+                              : checkingCompatibility
+                              ? 'hourglass-empty'
+                              : compatibilityReport?.compatible === false
+                              ? 'error'
+                              : compatibilityReport?.warnings?.length > 0
+                              ? 'warning'
+                              : 'check-circle'
+                        }
                         size={24}
-                        color={colors.success}
+                        color={
+                           Object.keys(selectedParts).length === 0
+                              ? colors.textMuted
+                              : checkingCompatibility
+                              ? colors.primary
+                              : compatibilityReport?.compatible === false
+                              ? colors.error
+                              : compatibilityReport?.warnings?.length > 0
+                              ? colors.warning
+                              : colors.success
+                        }
                      />
                      <Text
                         style={[
@@ -300,16 +329,139 @@ export default function BundleBuilderScreen() {
                         Compatibility Check
                      </Text>
                   </View>
-                  <Text
-                     style={[
-                        styles.compatibilityText,
-                        { color: colors.textSecondary },
-                     ]}
-                  >
-                     {Object.keys(selectedParts).length === 0
-                        ? 'Add parts to check compatibility'
-                        : 'All selected parts are compatible! ✓'}
-                  </Text>
+
+                  {/* Main Status Text */}
+                  {Object.keys(selectedParts).length === 0 ? (
+                     <Text
+                        style={[
+                           styles.compatibilityText,
+                           { color: colors.textSecondary },
+                        ]}
+                     >
+                        Add parts to check compatibility
+                     </Text>
+                  ) : checkingCompatibility ? (
+                     <Text
+                        style={[
+                           styles.compatibilityText,
+                           { color: colors.textSecondary },
+                        ]}
+                     >
+                        Checking compatibility...
+                     </Text>
+                  ) : compatibilityReport ? (
+                     <>
+                        <Text
+                           style={[
+                              styles.compatibilityText,
+                              {
+                                 color: compatibilityReport.compatible
+                                    ? colors.success
+                                    : colors.error,
+                                 fontWeight: '600',
+                              },
+                           ]}
+                        >
+                           {compatibilityReport.compatible
+                              ? compatibilityReport.warnings?.length > 0
+                                 ? 'Compatible with warnings ⚠️'
+                                 : 'All selected parts are compatible! ✓'
+                              : 'Compatibility issues detected! ✗'}
+                        </Text>
+
+                        {/* Display Issues */}
+                        {compatibilityReport.issues &&
+                           compatibilityReport.issues.length > 0 && (
+                              <View style={styles.issuesContainer}>
+                                 <Text
+                                    style={[
+                                       styles.issuesHeader,
+                                       { color: colors.error, marginTop: 12 },
+                                    ]}
+                                 >
+                                    Issues:
+                                 </Text>
+                                 {compatibilityReport.issues.map(
+                                    (issue, index) => (
+                                       <View
+                                          key={`issue-${index}`}
+                                          style={styles.issueRow}
+                                       >
+                                          <Text
+                                             style={[
+                                                styles.issueBullet,
+                                                { color: colors.error },
+                                             ]}
+                                          >
+                                             •
+                                          </Text>
+                                          <Text
+                                             style={[
+                                                styles.issueText,
+                                                { color: colors.textSecondary },
+                                             ]}
+                                          >
+                                             {issue}
+                                          </Text>
+                                       </View>
+                                    )
+                                 )}
+                              </View>
+                           )}
+
+                        {/* Display Warnings */}
+                        {compatibilityReport.warnings &&
+                           compatibilityReport.warnings.length > 0 && (
+                              <View style={styles.issuesContainer}>
+                                 <Text
+                                    style={[
+                                       styles.issuesHeader,
+                                       { color: colors.warning, marginTop: 12 },
+                                    ]}
+                                 >
+                                    Warnings:
+                                 </Text>
+                                 {compatibilityReport.warnings.map(
+                                    (warning, index) => (
+                                       <View
+                                          key={`warning-${index}`}
+                                          style={styles.issueRow}
+                                       >
+                                          <Text
+                                             style={[
+                                                styles.issueBullet,
+                                                { color: colors.warning },
+                                             ]}
+                                          >
+                                             •
+                                          </Text>
+                                          <Text
+                                             style={[
+                                                styles.issueText,
+                                                { color: colors.textSecondary },
+                                             ]}
+                                          >
+                                             {warning}
+                                          </Text>
+                                       </View>
+                                    )
+                                 )}
+                              </View>
+                           )}
+
+                        {/* Compatibility Score */}
+                        {compatibilityReport.score !== undefined && (
+                           <Text
+                              style={[
+                                 styles.compatibilityScore,
+                                 { color: colors.textMuted, marginTop: 8 },
+                              ]}
+                           >
+                              Compatibility Score: {compatibilityReport.score}%
+                           </Text>
+                        )}
+                     </>
+                  ) : null}
                </View>
                <View
                   style={{
@@ -704,5 +856,35 @@ const styles = StyleSheet.create({
       fontSize: 16,
       fontWeight: '600',
       marginTop: 16,
+   },
+   issuesContainer: {
+      marginTop: 4,
+   },
+   issuesHeader: {
+      fontSize: 13,
+      fontWeight: '700',
+      marginBottom: 6,
+   },
+   issueRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      marginBottom: 6,
+      paddingLeft: 4,
+   },
+   issueBullet: {
+      fontSize: 16,
+      fontWeight: '700',
+      marginRight: 8,
+      lineHeight: 20,
+   },
+   issueText: {
+      flex: 1,
+      fontSize: 13,
+      lineHeight: 20,
+   },
+   compatibilityScore: {
+      fontSize: 12,
+      fontWeight: '600',
+      fontStyle: 'italic',
    },
 });

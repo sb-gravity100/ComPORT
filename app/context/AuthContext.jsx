@@ -5,10 +5,19 @@ import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import api from '../services/api';
+import { canGoBack } from 'expo-router/build/global-state/routing';
 
 const AuthContext = createContext({});
 
 let API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+// if (process.env.NODE_ENV !== 'production') {
+//    API_URL = Constants.expoGoConfig?.debuggerHost
+//       ?.split(':')
+//       .shift()
+//       ?.concat(':6600/api');
+// }
+console.log(API_URL);
 
 export function useAuth() {
    return useContext(AuthContext);
@@ -47,6 +56,7 @@ export function AuthProvider({ children }) {
             password,
          });
       } catch (e) {
+         console.log({ ...e });
          return {
             error: true,
             message: e.response?.data?.message,

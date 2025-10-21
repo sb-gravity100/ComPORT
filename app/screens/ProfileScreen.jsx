@@ -27,6 +27,7 @@ export default function ProfileScreen() {
          const result = await getUser();
          setUser(result.data?.user);
          setLoading(false);
+         console.log(result.data?.user?.reviews);
       };
       fetchUser();
    }, []);
